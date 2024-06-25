@@ -21,3 +21,45 @@ Simulates a trading strategy combined with a portfolio management strategy.
    - Right-click on your server to get its ID.
    - Right-click on the log channel you created to obtain its ID.
 Replace `"your_token_here"`, `"your_discord_id_here"`, and `"your_logs_channel_id_here"` with your actual bot token, Discord server ID, and log channel ID respectively.
+
+## simulates.json
+Example of a simulation configuration:
+```json
+{
+    "default-sp_v1": {
+        "discord": {
+            "discord_channel_id": "1255167159051489280"
+        },
+        "api": {
+            "pairs_list": [
+                "BTC/USDT", "ETH/USDT", "BNB/USDT",
+                "ADA/USDT", "XRP/USDT", "DOGE/USDT",
+                "LTC/USDT", "DOT/USDT", "UNI/USDT",
+                "LINK/USDT", "BCH/USDT", "LUNA/USDT",
+                "SOL/USDT", "AVAX/USDT", "ALGO/USDT",
+                "VET/USDT", "FIL/USDT", "ICP/USDT",
+                "MATIC/USDT", "ATOM/USDT", "XLM/USDT",
+                "TRX/USDT", "ETC/USDT", "FTT/USDT",
+                "THETA/USDT", "XTZ/USDT", "EOS/USDT",
+                "AAVE/USDT", "KSM/USDT", "NEO/USDT",
+                "MKR/USDT", "CAKE/USDT", "COMP/USDT",
+                "ENJ/USDT", "ZEC/USDT", "DASH/USDT",
+                "MANA/USDT", "ZIL/USDT", "CHZ/USDT",
+                "SAND/USDT", "AXS/USDT"
+            ],
+            "strategy": "default",
+            "start_ts": "",
+            "end_ts": "",
+            "multi_positions": true
+        },
+        "positions": {
+            "reinvest_gains": false,
+            "position_%_invest": 20
+        },
+        "wallet": {
+            "invest_capital": 1000,
+            "adjust_invest_capital_if_loss": false
+        }
+    }
+}
+```
