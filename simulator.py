@@ -11,23 +11,14 @@ class Simulator(object):
     
     async def log(self, title, log):
         guild = self.discord_bot.get_guild(int(self.bot_config.get("discord_id", "")))
-
-        # Check if logs_channel_id is configured in bot_config.json
         if "logs_channel_id" not in self.bot_config:
             return
-        
         channel = guild.get_channel(int(self.bot_config["logs_channel_id"]))
         if channel is None:
             return
-        
-        # Get the highest role color for the embed
         highest_role = max(self.discord_bot.guilds[0].get_member(self.discord_bot.user.id).roles, 
                            key=lambda r: r.position if r is not None else 0)
-
-        # Set default color to green if no highest role found
         color = highest_role.color if highest_role else discord.Color.green()
-
-        # Send the embed asynchronously
         await send_embed(channel, title, log, color)
 
 class MyClient(discord.Client):
