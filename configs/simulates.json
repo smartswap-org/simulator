@@ -31,7 +31,11 @@
         "positions":
             {
                 "reinvest_gains": "False",
-                "position_%_invest": "20",
+                "position_%_invest": "20"
+            },
+        "wallet":
+            {
+                "invest_capital": "1000",
                 "adjust_invest_capital_if_loss": "False"
             }
     }
