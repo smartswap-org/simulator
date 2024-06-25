@@ -28,7 +28,7 @@ def format_time(seconds):
     hours, minutes = divmod(minutes, 60)
     return f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
 
-async def send_or_reply_embed(destination, title, description, color, is_reply=False):
+async def send_embed(channel, title, description, color):
     """
     This function creates an embed using the function create_embed,
     gets the time since the bot was started using the global variable bot_start_time,
@@ -51,26 +51,10 @@ async def send_or_reply_embed(destination, title, description, color, is_reply=F
     embed.set_footer(text=f"Bot uptime: {uptime_str}, date: {date}")
 
     # Send embed
-    if is_reply:
-        return await destination.reply(embed=embed)
-    else:
-        return await destination.send(embed=embed)
+    await channel.send(embed=embed)
 
-async def send_embed(channel, title, description, color):
+async def error(channel, error):
     """
-    This function sends an embed to a channel.
+    Sends an error embed in a channel.
     """
-    return await send_or_reply_embed(channel, title, description, color, is_reply=False)
-
-async def reply_embed(message, title, description, color):
-    """
-    This function sends an embed as a reply to a message.
-    """
-    return await send_or_reply_embed(message, title, description, color, is_reply=True)
-
-async def error(message, error):
-    """
-    Sends an error embed in the channel.
-    """
-    if not message: return
-    return await send_embed(message.channel, "❌ Error", error, discord.Color.brand_red())
+    return await send_embed(channel, "❌ Error", error, discord.Color.brand_red())
