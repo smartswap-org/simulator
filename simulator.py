@@ -5,6 +5,7 @@ from discord.ext import tasks
 from discord_bot.configs import get_discord_config, get_simulations_config
 from discord_bot.embeds import send_embed
 import requests
+import json 
 
 class Simulator(object):
     def __init__(self, discord_bot, bot_config):
@@ -28,7 +29,8 @@ class Simulator(object):
                 url = f"http://127.0.0.1:5000/QTSBE/{pairs}/{simulates_config[simulation]["api"]["strategy"]}"
                 response = requests.get(url)
                 response.raise_for_status()
-
+                json_data = json.loads(response.text)
+                print(json_data["result"][2])
         #await self.log(""", 
         #                "🚀 test", 
         #                 get_simulates_config())
