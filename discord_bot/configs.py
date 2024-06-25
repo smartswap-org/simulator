@@ -1,8 +1,14 @@
 import json
 
-def get_discord_config():
+def get_config(config):
     """
-    Function to read bot configuration from bot_config.json
+    Function to read bot configuration from configs/
     """
-    with open("configs/discord_bot.json", "r") as f:
+    with open(config, "r") as f:
         return json.load(f)
+
+def get_discord_config():
+    return get_config("configs/discord_bot.json")
+
+def get_simulates_config():
+    return get_config("configs/simulates.json")
