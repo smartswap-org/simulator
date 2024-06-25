@@ -10,5 +10,5 @@ def get_config(config):
 def get_discord_config():
     return get_config("configs/discord_bot.json")
 
-def get_simulates_config():
-    return get_config("configs/simulates.json")
+def get_simulations_config():
+    return get_config("configs/simulations.json")
