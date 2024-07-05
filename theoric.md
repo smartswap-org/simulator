@@ -7,7 +7,7 @@ Full Theoric of the simulator.
 
 ### Start Setup
 
-When the simulation starts, it verifies whether the database "simulator" exists; if not, it creates one. 
+When the simulation starts, it verifies whether the local database "simulator" exists; if not, it creates one. 
 
 Next, it creates a table for each simulation with the following structure:
 
@@ -51,7 +51,7 @@ For example, if `start_ts = 2020-01-01` and `end_ts = 2020-01-05`, the algorithm
 - 2020-01-01 to 2020-01-04
 - 2020-01-01 to 2020-01-05
 
-If a buy position is detected on SOLANA during the frame 2020-01-01 to 2020-01-02, it will insert this position into the database: `positions = {"Solana": position_details}`.
+If a buy position is detected on Solana Crypto during the frame 2020-01-01 to 2020-01-02, it will insert this position into the database: `positions = {"Solana": position_details}`. It will be considered as a current position, so you will have buy_date, buy_price, ... But no any infos about sell date and sell price.
 
 Only buy positions are stored. To detect a sell position, if a specific buy index is present in the frame 2020-01-01 to 2020-01-02 but absent in the subsequent frame 2020-01-01 to 2020-01-03, it is concluded that the position has been sold.
 
