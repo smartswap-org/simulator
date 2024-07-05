@@ -58,8 +58,8 @@ class Simulator:
                             positions = []
                             print(f"Failed to fetch data from {url}, status code: {response.status}")
 
-                    #self.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), positions)
-                    
+                    self.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"))
+
                     for position in positions:
                         self.db_manager.save_position(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), 
                                                       "Binance_MATICUSDT_1d", position['buy_date'], position['buy_price'], 
