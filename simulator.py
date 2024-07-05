@@ -48,8 +48,23 @@ class Simulator:
 
                 current_date = start_ts
                 while current_date < end_ts:
-                    positions = []  
-                    self.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), positions)
+                    end_ts_str = current_date.strftime("%Y-%m-%d")
+                    url = f"http://127.0.0.1:5000/QTSBE/Binance_MATICUSDT_1d/{simulates_config[simulation]['api']['strategy']}?start_ts={start_ts.strftime('%Y-%m-%d')}&end_ts={end_ts_str}&multi_positions={simulates_config[simulation]['api']['multi_positions']}"
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            response_json = await response.json()
+                            positions = response_json["result"][1]
+                        else:
+                            positions = []
+                            print(f"Failed to fetch data from {url}, status code: {response.status}")
+
+                    #self.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), positions)
+                    
+                    for position in positions:
+                        self.db_manager.save_position(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), 
+                                                      "Binance_MATICUSDT_1d", position['buy_date'], position['buy_price'], 
+                                                      position.get('sell_date'), position.get('sell_price'))
+
                     current_date += timedelta(days=1)
         
     async def start_simulation(self):
