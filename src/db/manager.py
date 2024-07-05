@@ -63,5 +63,18 @@ class DatabaseManager:
         except sqlite3.Error as e:
             print(f"An error occurred while saving position: {e}")
 
+    def get_positions_for_simulation(self, simulation_name, start_ts, end_ts):
+        try:
+            self.db_cursor.execute('''SELECT DISTINCT p.pair, p.buy_date, p.buy_price, p.sell_date, p.sell_price
+                                      FROM positions p
+                                      INNER JOIN simulation_positions sp ON p.id = sp.position_id
+                                      WHERE sp.simulation_name = ? AND sp.start_ts >= ? AND sp.end_ts <= ?''',
+                                   (simulation_name, start_ts, end_ts))
+            positions = self.db_cursor.fetchall()
+            return positions
+        except sqlite3.Error as e:
+            print(f"An error occurred while retrieving positions for simulation: {e}")
+            return None
+
     def close(self):
         self.db_connection.close()
