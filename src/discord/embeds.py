@@ -35,22 +35,15 @@ async def send_embed(channel, title, description, color):
     and sets this Bot uptime in the footer.
     Then it sends this embed either to a channel or as a reply to a message.
     """
-    # Truncate title if it's too long
+    # truncate title if it's too long
     if len(title) > 256:
-        title = title[:253] + "..."  # Keep it within 256 characters including "..."
+        title = title[:253] + "..."  # keep it within 256 characters including "..."
     
-    # Create embed
     embed = create_embed(title, description, color)
-
-    # Get Bot Uptime
     uptime_seconds = int(time.time() - bot_start_time)
     uptime_str = format_time(uptime_seconds)
     date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
-    # Set footer
     embed.set_footer(text=f"Bot uptime: {uptime_str}, date: {date}")
-
-    # Send embed
     await channel.send(embed=embed)
 
 async def error(channel, error):

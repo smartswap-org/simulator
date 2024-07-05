@@ -48,15 +48,8 @@ class Simulator:
 
                 current_date = start_ts
                 while current_date < end_ts:
-                    
-                    positions = []  # Empty positions
-
-                    print(start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"))
-
-                    # Save simulation data with empty positions, formatting dates as needed
+                    positions = []  
                     self.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), positions)
-
-                    # Update current date
                     current_date += timedelta(days=1)
         
     async def start_simulation(self):
