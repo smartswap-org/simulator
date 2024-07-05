@@ -1,49 +1,64 @@
-# simulates.py
 import aiohttp
 from datetime import datetime, timedelta
 import sqlite3
 from src.discord.configs import get_simulations_config
 from src.db.manager import DatabaseManager
+from src.simulation.positions import get_positions
+
 
 async def simulates(simulator):
     async with aiohttp.ClientSession() as session:
         simulates_config = get_simulations_config()
         for simulation_name, simulation in simulates_config.items():
-            start_ts = datetime.strptime(simulation["api"]["start_ts"], "%Y-%m-%d")
-            end_ts_config = simulation["api"]["end_ts"]
-            end_ts = datetime.strptime(end_ts_config, "%Y-%m-%d") if end_ts_config else datetime.now()
+            start_ts_config = datetime.strptime(simulation["api"]["start_ts"], "%Y-%m-%d")
 
-            current_date = start_ts
-            while current_date <= end_ts:
-                end_ts_str = current_date.strftime("%Y-%m-%d")
-                for pair in simulation["api"]["pairs_list"]:
-                    url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?start_ts={start_ts.strftime('%Y-%m-%d')}&end_ts={end_ts_str}&multi_positions={simulation['api']['multi_positions']}"
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            response_json = await response.json()
-                            positions = response_json["result"][1]
-                        else:
-                            positions = []
-                            print(f"Failed to fetch data from {url}, status code: {response.status}")
+            if simulation["api"]["end_ts"]:
+                end_ts_config = datetime.strptime(simulation["api"]["end_ts"], "%Y-%m-%d")
+            else:
+                end_ts_config = datetime.now()
 
-                    simulator.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"))
+            end_ts = start_ts_config + timedelta(days=1)
+            while end_ts <= end_ts_config:
+                # todo: verify here if the calculs are alrdy entered in db (avoid to calcul from start)
 
-                    for position in positions:
-                        simulator.db_manager.save_position(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), 
-                                                          pair, position['buy_date'], position['buy_price'], 
-                                                          position.get('sell_date'), position.get('sell_price'))
+                positions = await get_positions(
+                    simulator, 
+                    simulation_name, 
+                    simulation, 
+                    start_ts_config, 
+                    end_ts)
 
-                    previous_positions = simulator.db_manager.get_positions_for_simulation(simulation_name, start_ts.strftime("%Y-%m-%d"), (current_date - timedelta(days=1)).strftime("%Y-%m-%d"))
-                    current_positions = simulator.db_manager.get_positions_for_simulation(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"))
+                # here create ts enter in db in table 'simulations' in db
+                simulator.db_manager.save_simulation_data(simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"))
 
-                    for prev_pos in previous_positions:
-                        position_found = False
-                        for curr_pos in current_positions:
-                            if prev_pos[0] == curr_pos[0]:  # Compare pairs
-                                position_found = True
-                                break
-                        if not position_found:
-                            # Position is sold
-                            simulator.update_position_sell_info(simulation_name, start_ts.strftime("%Y-%m-%d"), prev_pos[1], prev_pos[2], current_date.strftime("%Y-%m-%d"))
+                for position in positions:
+                    pair = position["pair"]
+                    buy_date = position["buy_date"]
+                    buy_price = position["buy_price"]
+                    sell_date = position.get("sell_date")
+                    sell_price = position.get("sell_price")
 
-                current_date += timedelta(days=1)
+                    # check if the position already exists in the database
+                    simulator.db_manager.db_cursor.execute('''SELECT id FROM positions WHERE pair = ? AND buy_date = ? AND buy_price = ? AND (sell_date = ? OR sell_date IS NULL) AND (sell_price = ? OR sell_price IS NULL)''', 
+                                                           (pair, buy_date, buy_price, sell_date, sell_price))
+                    existing_position = simulator.db_manager.db_cursor.fetchone()
+
+                    if existing_position:
+                        position_id = existing_position[0]
+                    else:
+                        # insert new position into positions table
+                        simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price) 
+                                                                  VALUES (?, ?, ?, ?, ?)''', 
+                                                               (pair, buy_date, buy_price, sell_date, sell_price))
+                        simulator.db_manager.db_connection.commit()
+                        position_id = simulator.db_manager.db_cursor.lastrowid
+
+                    # insert into simulation_positions
+                    simulator.db_manager.db_cursor.execute('''INSERT OR REPLACE INTO simulation_positions (simulation_name, start_ts, end_ts, position_id) 
+                                                              VALUES (?, ?, ?, ?)''', 
+                                                           (simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), position_id))
+                    simulator.db_manager.db_connection.commit()
+
+                # next ts
+                end_ts += timedelta(days=1)
+
