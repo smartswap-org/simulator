@@ -26,10 +26,14 @@ class DatabaseManager:
         self.db_connection.commit()
 
     def save_simulation_data(self, simulation_name, start_ts, end_ts, positions):
-        self.db_cursor.execute('''INSERT INTO simulations (simulation_name, start_ts, end_ts, positions) 
-                                  VALUES (?, ?, ?, ?)''', 
-                               (simulation_name, start_ts, end_ts, json.dumps(positions)))
-        self.db_connection.commit()
+        try:
+            self.db_cursor.execute('''INSERT INTO simulations (simulation_name, start_ts, end_ts, positions) 
+                                      VALUES (?, ?, ?, ?)''', 
+                                   (simulation_name, start_ts, end_ts, json.dumps(positions)))
+            self.db_connection.commit()
+            print(f"Data saved successfully: {simulation_name}, {start_ts} to {end_ts}")
+        except sqlite3.Error as e:
+            print(f"An error occurred while saving simulation data: {e}")
 
     def save_position(self, simulation_id, pair, buy_date, buy_price, sell_date, sell_price):
         self.db_cursor.execute('''INSERT INTO positions (simulation_id, pair, buy_date, buy_price, sell_date, sell_price) 

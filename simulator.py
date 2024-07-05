@@ -1,11 +1,12 @@
 import discord
 import socket
 from discord.ext import tasks
-from src.discord.configs import get_discord_config
+from src.discord.configs import get_discord_config, get_simulations_config
 from src.discord.embeds import send_embed
 from src.db.manager import DatabaseManager  
 from discord import Activity, ActivityType
-
+import aiohttp
+from datetime import datetime, timedelta
 
 class Simulator:
     def __init__(self, discord_bot, bot_config):
@@ -37,7 +38,26 @@ class Simulator:
 
     @tasks.loop(seconds=1)
     async def simulates(self):
-        print("")
+        async with aiohttp.ClientSession() as session:
+            simulates_config = get_simulations_config()
+            for simulation in simulates_config:
+                simulation_name = simulation
+                start_ts = datetime.strptime(simulates_config[simulation]["api"]["start_ts"], "%Y-%m-%d")
+                end_ts_config = simulates_config[simulation]["api"]["end_ts"]
+                end_ts = datetime.strptime(end_ts_config, "%Y-%m-%d") if end_ts_config else datetime.now()
+
+                current_date = start_ts
+                while current_date < end_ts:
+                    
+                    positions = []  # Empty positions
+
+                    print(start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"))
+
+                    # Save simulation data with empty positions, formatting dates as needed
+                    self.db_manager.save_simulation_data(simulation_name, start_ts.strftime("%Y-%m-%d"), current_date.strftime("%Y-%m-%d"), positions)
+
+                    # Update current date
+                    current_date += timedelta(days=1)
         
     async def start_simulation(self):
         await self.log(self.bot_config["logs_channel_id"], "🚀 Started", 
