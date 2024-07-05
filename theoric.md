@@ -12,11 +12,30 @@ When the simulation starts, it verifies whether the database "simulator" exists;
 Next, it creates a table for each simulation with the following structure:
 
 ```sql
-CREATE TABLE IF NOT EXISTS simulation_name (
-    positions TEXT,
-    start_ts DATE,
-    end_ts DATE,
-    PRIMARY KEY (start_ts, end_ts)
+CREATE TABLE IF NOT EXISTS simulations (
+    simulation_name TEXT,
+    start_ts TEXT,
+    end_ts TEXT,
+    PRIMARY KEY (simulation_name, start_ts, end_ts)
+);
+
+CREATE TABLE IF NOT EXISTS positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pair TEXT,
+    buy_date TEXT,
+    buy_price REAL,
+    sell_date TEXT,
+    sell_price REAL
+);
+
+CREATE TABLE IF NOT EXISTS simulation_positions (
+    simulation_name TEXT,
+    start_ts TEXT,
+    end_ts TEXT,
+    position_id INTEGER,
+    FOREIGN KEY(simulation_name, start_ts, end_ts) REFERENCES simulations(simulation_name, start_ts, end_ts),
+    FOREIGN KEY(position_id) REFERENCES positions(id),
+    PRIMARY KEY (simulation_name, start_ts, end_ts, position_id)
 );
 ```
 
