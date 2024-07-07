@@ -29,10 +29,12 @@ async def get_positions(
                 if response.status == 200:
                     response_json = await response.json()
                     current_positions = response_json["result"][2]  # 0 = indicators, 1 = all old positions (ended), 2 = current position
+                    previous_positions = response_json["result"][1]
                     for position in current_positions:
                         position['pair'] = pair
                 else:
                     current_positions = []
+                    previous_positions = []
                     print(f"Failed to fetch data from {url}, status code: {response.status}")
 
         for old_position in old_positions:
@@ -49,11 +51,15 @@ async def get_positions(
                     break
 
             if not found:
-                simulator.db_manager.db_cursor.execute('''UPDATE positions 
-                                                          SET sell_date = ?, sell_price = ? 
-                                                          WHERE id = ?''', 
-                                                       (end_ts.strftime("%Y-%m-%d"), old_position[5], old_position[0]))
-                simulator.db_manager.db_connection.commit()
+                for previous_position in previous_positions:
+                    if (previous_position['buy_date'] == old_position[2] and 
+                        previous_position['buy_price'] == old_position[3]):
+                        simulator.db_manager.db_cursor.execute('''UPDATE positions 
+                                                                  SET sell_date = ?, sell_price = ? 
+                                                                  WHERE id = ?''', 
+                                                               (previous_position['sell_date'], previous_position['sell_price'], old_position[0]))
+                        simulator.db_manager.db_connection.commit()
+                        break
 
         for current_position in current_positions:
             if not any(old_position[1] == current_position['pair'] and
@@ -72,8 +78,15 @@ async def get_positions(
                 if response.status == 200:
                     response_json = await response.json()
                     positions = response_json["result"][2]  # 0 = indicators, 1 = all old positions (ended), 2 = current position
+                    previous_positions = response_json["result"][1]
                     for position in positions:
                         position['pair'] = pair
+                        for previous_position in previous_positions:
+                            if (previous_position['buy_date'] == position['buy_date'] and 
+                                previous_position['buy_price'] == position['buy_price']):
+                                position['sell_date'] = previous_position['sell_date']
+                                position['sell_price'] = previous_position['sell_price']
+                                break
                 else:
                     positions = []
                     print(f"Failed to fetch data from {url}, status code: {response.status}")
