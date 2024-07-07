@@ -25,8 +25,8 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                     current_positions = response_json["result"][2]  # 0 = indicators, 1 = all old positions (ended), 2 = current position
                     for position in current_positions:
                         position['pair'] = pair
-                        position['buy_signals'] = json.dumps(position.get('buy_signals', []))  
-                        position['sell_signals'] = json.dumps(position.get('sell_signals', []))  
+                        position['buy_signals'] = json.dumps(position.get('buy_signals', []))  # Ensure buy_signals exists
+                        position['sell_signals'] = json.dumps(position.get('sell_signals', []))  # Ensure sell_signals exists
                         positions.append(position)
                 else:
                     current_positions = []
@@ -48,14 +48,18 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                 for previous_position in response_json["result"][1]:
                     if (previous_position['buy_date'] == old_position[2] and 
                         previous_position['buy_price'] == old_position[3]):
-                        previous_position['buy_signals'] = json.dumps(previous_position.get('buy_signals', []))  
-                        previous_position['sell_signals'] = json.dumps(previous_position.get('sell_signals', []))  
+                        previous_position['buy_signals'] = json.dumps(previous_position.get('buy_signals', []))  # Ensure buy_signals exists
+                        previous_position['sell_signals'] = json.dumps(previous_position.get('sell_signals', []))  # Ensure sell_signals exists
                         simulator.db_manager.db_cursor.execute('''UPDATE positions 
                                                                   SET sell_date = ?, sell_price = ?, 
-                                                                      buy_signals = ?, sell_signals = ? 
+                                                                      buy_signals = ?, sell_signals = ?, 
+                                                                      buy_index = ?, sell_index = ?, 
+                                                                      position_duration = ?, ratio = ?
                                                                   WHERE id = ?''', 
                                                                (previous_position['sell_date'], previous_position['sell_price'], 
                                                                 previous_position['buy_signals'], previous_position['sell_signals'], 
+                                                                previous_position['buy_index'], previous_position['sell_index'], 
+                                                                previous_position['position_duration'], previous_position['ratio'], 
                                                                 old_position[0]))
                         simulator.db_manager.db_connection.commit()
                         break
@@ -83,7 +87,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                             if (previous_position['buy_date'] == position['buy_date'] and 
                                 previous_position['buy_price'] == position['buy_price']):
                                 previous_position['buy_signals'] = json.dumps(previous_position.get('buy_signals', []))  
-                                previous_position['sell_signals'] = json.dumps(previous_position.get('sell_signals', [])) 
+                                previous_position['sell_signals'] = json.dumps(previous_position.get('sell_signals', []))  
                                 position['sell_date'] = previous_position['sell_date']
                                 position['sell_price'] = previous_position['sell_price']
                                 position['buy_signals'] = previous_position['buy_signals']
