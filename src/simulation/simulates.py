@@ -5,7 +5,6 @@ from src.discord.configs import get_simulations_config
 from src.db.manager import DatabaseManager
 from src.simulation.positions import get_positions
 
-
 async def simulates(simulator):
     async with aiohttp.ClientSession() as session:
         simulates_config = get_simulations_config()
@@ -17,18 +16,25 @@ async def simulates(simulator):
             else:
                 end_ts_config = datetime.now()
 
-            end_ts = start_ts_config + timedelta(days=1)
-            while end_ts <= end_ts_config:
-                # todo: verify here if the calculs are alrdy entered in db (avoid to calcul from start)
+            simulator.db_manager.db_cursor.execute('''SELECT MAX(end_ts) FROM simulations 
+                                                      WHERE simulation_name = ?''', 
+                                                   (simulation_name,))
+            last_end_ts_entry = simulator.db_manager.db_cursor.fetchone()
+            if last_end_ts_entry and last_end_ts_entry[0]:
+                last_end_ts = datetime.strptime(last_end_ts_entry[0], "%Y-%m-%d")
+                end_ts = last_end_ts  
+            else:
+                end_ts = start_ts_config + timedelta(days=1)
 
+            while end_ts <= end_ts_config:
                 positions = await get_positions(
                     simulator, 
                     simulation_name, 
                     simulation, 
-                    start_ts_config, 
+                    start_ts_config,
+                    end_ts_config, 
                     end_ts)
 
-                # here create ts enter in db in table 'simulations' in db
                 simulator.db_manager.save_simulation_data(simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"))
 
                 for position in positions:
@@ -38,7 +44,6 @@ async def simulates(simulator):
                     sell_date = position.get("sell_date")
                     sell_price = position.get("sell_price")
 
-                    # check if the position already exists in the database
                     simulator.db_manager.db_cursor.execute('''SELECT id FROM positions WHERE pair = ? AND buy_date = ? AND buy_price = ? AND (sell_date = ? OR sell_date IS NULL) AND (sell_price = ? OR sell_price IS NULL)''', 
                                                            (pair, buy_date, buy_price, sell_date, sell_price))
                     existing_position = simulator.db_manager.db_cursor.fetchone()
@@ -46,19 +51,15 @@ async def simulates(simulator):
                     if existing_position:
                         position_id = existing_position[0]
                     else:
-                        # insert new position into positions table
                         simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price) 
                                                                   VALUES (?, ?, ?, ?, ?)''', 
                                                                (pair, buy_date, buy_price, sell_date, sell_price))
                         simulator.db_manager.db_connection.commit()
                         position_id = simulator.db_manager.db_cursor.lastrowid
 
-                    # insert into simulation_positions
                     simulator.db_manager.db_cursor.execute('''INSERT OR REPLACE INTO simulation_positions (simulation_name, start_ts, end_ts, position_id) 
                                                               VALUES (?, ?, ?, ?)''', 
                                                            (simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), position_id))
                     simulator.db_manager.db_connection.commit()
 
-                # next ts
                 end_ts += timedelta(days=1)
-
