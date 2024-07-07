@@ -32,7 +32,6 @@ async def simulates(simulator):
                     simulation_name, 
                     simulation, 
                     start_ts_config,
-                    end_ts_config, 
                     end_ts)
 
                 simulator.db_manager.save_simulation_data(simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"))
