@@ -4,6 +4,7 @@ import sqlite3
 from src.discord.configs import get_simulations_config
 from src.db.manager import DatabaseManager
 from src.simulation.positions import get_positions
+from loguru import logger
 
 async def simulates(simulator):
     async with aiohttp.ClientSession() as session:

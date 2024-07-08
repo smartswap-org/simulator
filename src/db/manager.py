@@ -1,4 +1,5 @@
 import sqlite3
+from loguru import logger
 
 class DatabaseManager:
     def __init__(self, db_path='simulator.db'):
@@ -44,9 +45,9 @@ class DatabaseManager:
                                       VALUES (?, ?, ?)''', 
                                    (simulation_name, start_ts, end_ts))
             self.db_connection.commit()
-            print(f"Simulation data saved successfully: {simulation_name}, {start_ts} to {end_ts}")
+            logger.info(f"Simulation data saved successfully: {simulation_name}, {start_ts} to {end_ts}")
         except sqlite3.Error as e:
-            print(f"An error occurred while saving simulation data: {e}")
+            logger.error(f"An error occurred while saving simulation data: {e}")
 
     def save_position(self, pair, buy_date, buy_price, sell_date, sell_price, buy_index=None, sell_index=None, position_duration=None, ratio=None, buy_signals=None, sell_signals=None):
         try:
@@ -65,7 +66,7 @@ class DatabaseManager:
 
             return position_id
         except sqlite3.Error as e:
-            print(f"An error occurred while saving position: {e}")
+            logger.error(f"An error occurred while saving position: {e}")
             return None
 
     def get_positions_for_simulation(self, simulation_name, start_ts, end_ts):
@@ -80,7 +81,7 @@ class DatabaseManager:
             positions = self.db_cursor.fetchall()
             return positions
         except sqlite3.Error as e:
-            print(f"An error occurred while retrieving positions for simulation: {e}")
+            logger.error(f"An error occurred while retrieving positions for simulation: {e}")
             return None
 
     def close(self):

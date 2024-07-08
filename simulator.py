@@ -1,4 +1,3 @@
-# simulator.py
 import discord
 import socket
 from discord.ext import tasks
@@ -7,6 +6,7 @@ from src.discord.embeds import send_embed
 from src.db.manager import DatabaseManager
 from discord import Activity, ActivityType
 from datetime import datetime
+from loguru import logger
 import sqlite3
 from src.simulation.simulates import simulates 
 
@@ -44,9 +44,9 @@ class Simulator:
                                       WHERE simulation_name = ? AND start_ts = ? AND end_ts = ?''', 
                                    (sell_date, sell_price, simulation_name, start_ts, end_ts))
             self.db_connection.commit()
-            print(f"Position updated successfully: {simulation_name}, {start_ts} to {end_ts}")
+            logger.info(f"Position updated successfully: {simulation_name}, {start_ts} to {end_ts}")
         except sqlite3.Error as e:
-            print(f"An error occurred while updating position: {e}")
+            logger.error(f"An error occurred while updating position: {e}")
 
     @tasks.loop(seconds=1)
     async def simulates_loop(self):
@@ -59,7 +59,7 @@ class Simulator:
 
 class MyClient(discord.Client):
     async def on_ready(self):
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
+        logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
         await simulator.start_simulation()
         await self.change_presence(activity=Activity(type=ActivityType.custom, name=" ", state="🚀 working"))
 
