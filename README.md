@@ -1,65 +1,51 @@
-# simulator
-Simulates a trading strategy combined with a portfolio management strategy.
+# Smartswap Simulator
+
+A module of Smartswap that simulates trading strategies in real-time combined with capital management strategies.
 
 <img src="https://github.com/smartswap-org/simulator/blob/74493bf848cdb234507e7518d06b5dd75421079b/assets/simulator-logo.jpeg" width="250" height="250">
 
-# Configs
+`Stack`
 
-## configs/discord_bot.json
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 
-```json
-{
-    "token": "your_token_here",
-    "prefix": ".",
-    "discord_id": "your_discord_id_here",
-    "logs_channel_id": "your_logs_channel_id_here"
-}
-```
-1. **Token**: Obtain your bot token from [Discord Developer Portal](https://discord.com/developers/applications/).
-2. **Discord ID and Logs Channel ID**:
-   - Activate Discord as a developer app.
-   - Right-click on your server to get its ID.
-   - Right-click on the log channel you created to obtain its ID.
-Replace `"your_token_here"`, `"your_discord_id_here"`, and `"your_logs_channel_id_here"` with your actual bot token, Discord server ID, and log channel ID respectively.
+`Tested / Hosted`
 
-## simulates.json
-Example of a simulation configuration:
-```json
-{
-    "default-sp_v1": {
-        "discord": {
-            "discord_channel_id": "1255167159051489280"
-        },
-        "api": {
-            "pairs_list": [
-                "BTC/USDT", "ETH/USDT", "BNB/USDT",
-                "ADA/USDT", "XRP/USDT", "DOGE/USDT",
-                "LTC/USDT", "DOT/USDT", "UNI/USDT",
-                "LINK/USDT", "BCH/USDT", "LUNA/USDT",
-                "SOL/USDT", "AVAX/USDT", "ALGO/USDT",
-                "VET/USDT", "FIL/USDT", "ICP/USDT",
-                "MATIC/USDT", "ATOM/USDT", "XLM/USDT",
-                "TRX/USDT", "ETC/USDT", "FTT/USDT",
-                "THETA/USDT", "XTZ/USDT", "EOS/USDT",
-                "AAVE/USDT", "KSM/USDT", "NEO/USDT",
-                "MKR/USDT", "CAKE/USDT", "COMP/USDT",
-                "ENJ/USDT", "ZEC/USDT", "DASH/USDT",
-                "MANA/USDT", "ZIL/USDT", "CHZ/USDT",
-                "SAND/USDT", "AXS/USDT"
-            ],
-            "strategy": "default",
-            "start_ts": "",
-            "end_ts": "",
-            "multi_positions": true
-        },
-        "positions": {
-            "reinvest_gains": false,
-            "position_%_invest": 20
-        },
-        "wallet": {
-            "invest_capital": 1000,
-            "adjust_invest_capital_if_loss": false
-        }
-    }
-}
-```
+![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Windows 11](https://img.shields.io/badge/Windows%2011-%230079d5.svg?style=for-the-badge&logo=Windows%2011&logoColor=white)
+![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0)
+
+`Integration`
+
+![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)
+
+---
+
+### Features:
+
+- **Trading Strategy Simulation**: Test various trading strategies in a simulated environment before applying them to real markets.
+- **Capital Management**: Apply capital management strategies in real-time alongside trading strategies from the QTSBE API.
+- **Integration**: Includes integration with Discord for real-time notifications and logging.
+
+### Purpose:
+
+The Smartswap Simulator represents the next step after backtesting, allowing you to validate strategies live in the market environment. It also facilitates the application of capital management strategies to trading bots.
+
+### Getting Started:
+
+To begin using the Smartswap Simulator, follow these steps:
+
+1. **Clone the Repository**: `git clone https://github.com/smartswap-org/simulator`
+2. **Install Requirements**: `pip install -r requirements.txt`
+3. **Configure Discord Settings**: Refer to `configs/README.MD` for instructions on creating `configs/discord_bot.json`.
+4. **Configure Simulations**: Refer to `configs/README.MD` for instructions on creating `configs/simulations.json`.
+5. **Run the Simulator**: `python simulator.py`
+
+---
+
+### Support and Contribution:
+
+For any issues, suggestions, or contributions, please feel free to open an issue or pull request on [GitHub](https://github.com/smartswap-org/simulator).
+
+---
