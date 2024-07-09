@@ -45,11 +45,11 @@ class DatabaseManager:
                                       VALUES (?, ?, ?)''', 
                                    (simulation_name, start_ts, end_ts))
             self.db_connection.commit()
-            logger.info(f"Simulation data saved successfully: {simulation_name}, {start_ts} to {end_ts}")
+            logger.debug(f"Simulation data saved: {simulation_name}, {start_ts} to {end_ts}")
         except sqlite3.Error as e:
             logger.error(f"An error occurred while saving simulation data: {e}")
 
-    def save_position(self, pair, buy_date, buy_price, sell_date, sell_price, buy_index=None, sell_index=None, position_duration=None, ratio=None, buy_signals=None, sell_signals=None):
+    def save_position(self, pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals):
         try:
             # Check if the position already exists
             self.db_cursor.execute('''SELECT id FROM positions WHERE pair = ? AND buy_date = ? AND buy_price = ? AND sell_date = ? AND sell_price = ?''', 
