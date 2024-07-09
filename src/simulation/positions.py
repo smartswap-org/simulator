@@ -1,8 +1,31 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# A module of Smartswap that simulates trading strategies in real-time combined
+# with capital management strategies.
+#
+# Repository: https://github.com/smartswap-org/simulator
+# Author: Simon
+# =============================================================================
+# Description of this file:
+# Give all positions from a start_ts to a end_ts considering old positions and
+# update them if more datas available.
+# =============================================================================
+
 import json
 import aiohttp
 from datetime import timedelta
 
 async def fetch_positions_from_database(simulator, simulation_name, previous_end_ts):
+    """
+    Fetch positions from the database for a specific simulation and end timestamp.
+    
+    simulator: Instance of Simulator class.
+    simulation_name: Name of the simulation.
+    previous_end_ts: Previous end timestamp for fetching positions.
+    
+    return: List of positions fetched from the database.
+    """
     simulator.db_manager.db_cursor.execute(
         '''SELECT p.*, p.buy_signals, p.sell_signals
            FROM positions p
@@ -14,6 +37,15 @@ async def fetch_positions_from_database(simulator, simulation_name, previous_end
     return simulator.db_manager.db_cursor.fetchall()
 
 async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
+    """
+    Fetch positions from an API endpoint for a specific simulation and time range.
+    
+    simulation: Simulation configuration dictionary.
+    start_ts_config: Start timestamp for the API query.
+    end_ts: End timestamp for the API query.
+
+    return: Tuple containing current positions fetched from API and previous positions.
+    """
     pair = "Binance_SOLUSDT_1d"
     url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?start_ts={start_ts_config.strftime('%Y-%m-%d')}&end_ts={end_ts.strftime('%Y-%m-%d')}&multi_positions={simulation['api']['multi_positions']}"
 
@@ -28,6 +60,13 @@ async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
                 return [], []
 
 async def update_positions_in_database(simulator, previous_position, old_position):
+    """
+    Update positions in the database based on new data.
+    
+    simulator: Instance of Simulator class.
+    previous_position: Updated position data.
+    old_position: Old position data.
+    """
     simulator.db_manager.db_cursor.execute(
         '''UPDATE positions 
            SET sell_date = ?, sell_price = ?, 
@@ -44,20 +83,35 @@ async def update_positions_in_database(simulator, previous_position, old_positio
     simulator.db_manager.db_connection.commit()
 
 async def get_positions(simulator, simulation_name, simulation, start_ts_config, end_ts):
+    """
+    Fetch positions for a specific simulation and time range,
+    combining data from API and database.
+
+    simulator: Instance of Simulator class.
+    simulation_name: Name of the simulation.
+    simulation: Simulation configuration dictionary.
+    start_ts_config: Start timestamp for the position fetch.
+    end_ts: End timestamp for the position fetch.
+
+    return: List of positions fetched and processed.
+    """
     previous_end_ts = end_ts - timedelta(days=2)
     positions = []
 
+    # check if there are previous positions to consider
     if previous_end_ts >= start_ts_config:
         old_positions = await fetch_positions_from_database(simulator, simulation_name, previous_end_ts)
 
         current_positions, previous_positions = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
 
+        # process current positions from API
         for position in current_positions:
             position['pair'] = position.get('pair', "Binance_SOLUSDT_1d")
             position['buy_signals'] = json.dumps(position.get('buy_signals', []))
             position['sell_signals'] = json.dumps(position.get('sell_signals', []))
             positions.append(position)
 
+        # update old positions based on new data
         for old_position in old_positions:
             found = False
             for current_position in current_positions:
@@ -79,6 +133,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                         await update_positions_in_database(simulator, previous_position, old_position)
                         break
 
+        # add current positions that are not in old positions
         positions.extend([
             current_position for current_position in current_positions 
             if not any(old_position[1] == current_position.get('pair') and
@@ -89,6 +144,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
         ])
 
     else:
+        # fetch positions directly from API if no previous positions
         current_positions, _ = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
         positions = current_positions
 
