@@ -1,11 +1,8 @@
 # =============================================================================
 # Smartswap Simulator
 # =============================================================================
-# A module of Smartswap that simulates trading strategies in real-time combined
-# with capital management strategies.
-#
 # Repository: https://github.com/smartswap-org/simulator
-# Author: Simon
+# Author of this code: Simon
 # =============================================================================
 # Description of this file:
 # Give all positions from a start_ts to a end_ts considering old positions and

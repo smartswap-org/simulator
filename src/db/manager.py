@@ -1,11 +1,8 @@
 # =============================================================================
 # Smartswap Simulator
 # =============================================================================
-# A module of Smartswap that simulates trading strategies in real-time combined
-# with capital management strategies.
-#
 # Repository: https://github.com/smartswap-org/simulator
-# Author: Simon
+# Author of this code: Simon
 # =============================================================================
 # Description of this file:
 # This file contains the DatabaseManager class, which handles all interactions
