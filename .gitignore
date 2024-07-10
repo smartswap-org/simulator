@@ -1,2 +1,5 @@
 *.pyc
 discord_bot.json
+simulations.json
+simulator.db
+logs/
