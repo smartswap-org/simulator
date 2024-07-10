@@ -61,7 +61,7 @@ class Simulator:
         color = highest_role.color if highest_role else discord.Color.green()
         await send_embed(channel, title, log, color)  # send an embed message to the channel
 
-    async def send_position_embed(self, channel_id, title, position):
+    async def send_position_embed(self, channel_id, title, color, position):
         """
         Send a detailed embed message about a position in a channel on Discord
         """
@@ -69,12 +69,10 @@ class Simulator:
         channel = guild.get_channel(int(channel_id))  # get the channel by ID
         if channel is None:
             return
-        embed = discord.Embed(title=title, color=discord.Color.dark_orange())  # create an embed message
+        embed = discord.Embed(title=title, color=color)  # create an embed message
         # add fields to the embed message
-        embed.add_field(name="Pair", value=position["pair"], inline=False)
-        embed.add_field(name="Buy Date", value=position["buy_date"], inline=True)
-        embed.add_field(name="Buy Price", value=position["buy_price"], inline=True)
-        embed.add_field(name="Buy Index", value=position["buy_index"], inline=True)
+        for key in position.keys():
+            embed.add_field(name=key, value=position[key], inline=False)
         await channel.send(embed=embed)  # send the embed message to the channel
 
     def update_position_sell_info(self, simulation_name, start_ts, end_ts, sell_date, sell_price):

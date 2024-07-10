@@ -13,7 +13,7 @@ import json
 import aiohttp
 from datetime import timedelta
 import sqlite3
-#from src.discord.embeds import discord, send_embed
+from src.discord.embeds import discord
 from loguru import logger
 
 async def fetch_positions_from_database(simulator, simulation_name, previous_end_ts):
@@ -86,7 +86,7 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
              old_position[0])
         )
         simulator.db_manager.db_connection.commit()
-        #await simulator.log(simulation['discord']['discord_channel_id'], "Closed Position", previous_position)
+        await simulator.send_position_embed(simulation['discord']['discord_channel_id'], "Closed Position", discord.Color.pink(), previous_position)
         logger.debug(f"Position updated in database: {simulation_name}, {old_position}")
     except sqlite3.Error as e:
         logger.error(f"Error updating position in database: {e}")
@@ -116,7 +116,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
 
             # process current positions from API
             for position in current_positions:
-                position['pair'] = position.get('pair', "Binance_SOLUSDT_1d")
+                position['pair'] = position.get('pair', "Unknown")
                 position['buy_signals'] = json.dumps(position.get('buy_signals', []))
                 position['sell_signals'] = json.dumps(position.get('sell_signals', []))
                 positions.append(position)
