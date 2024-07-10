@@ -68,6 +68,8 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
     Update positions in the database based on new data.
     
     simulator: Instance of Simulator class.
+    simulation_name: Name of the simulation.
+    simulation: Simulation configuration dictionary.
     previous_position: Updated position data.
     old_position: Old position data.
     """
@@ -86,7 +88,27 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
              old_position[0])
         )
         simulator.db_manager.db_connection.commit()
-        await simulator.send_position_embed(simulation['discord']['discord_channel_id'], "Closed Position", discord.Color.pink(), previous_position)
+        
+        # fetch the updated position from the database
+        simulator.db_manager.db_cursor.execute(
+            '''SELECT pair, buy_date, buy_price, sell_date, sell_price, buy_signals, sell_signals
+               FROM positions
+               WHERE id = ?''', 
+            (old_position[0],)
+        )
+        updated_position = simulator.db_manager.db_cursor.fetchone()
+        if updated_position:
+            position = {
+                'pair': updated_position[0],
+                'buy_date': updated_position[1],
+                'buy_price': updated_position[2],
+                'sell_date': updated_position[3],
+                'sell_price': updated_position[4],
+                'buy_signals': updated_position[5],
+                'sell_signals': updated_position[6],
+            }
+            await simulator.send_position_embed(simulation['discord']['discord_channel_id'], "🎊 Closed Position", discord.Color.pink(), position)
+        
         logger.debug(f"Position updated in database: {simulation_name}, {old_position}")
     except sqlite3.Error as e:
         logger.error(f"Error updating position in database: {e}")
