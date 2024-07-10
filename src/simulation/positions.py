@@ -54,7 +54,11 @@ async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
             async with session.get(url) as response:
                 if response.status == 200:
                     response_json = await response.json()
+                    old_positions = response_json["result"][1]
                     current_positions = response_json["result"][2]
+                    for stk in [old_positions, current_positions]:
+                        for position in stk:
+                            position['pair'] = pair
                     return current_positions, response_json["result"][1]
                 else:
                     logger.error(f"Failed to fetch data from {url}, status code: {response.status}")
@@ -91,7 +95,7 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
         
         # fetch the updated position from the database
         simulator.db_manager.db_cursor.execute(
-            '''SELECT pair, buy_date, buy_price, sell_date, sell_price, buy_signals, sell_signals
+            '''SELECT pair, buy_date, buy_price, sell_date, sell_price, buy_signals, sell_signals, ratio, position_duration
                FROM positions
                WHERE id = ?''', 
             (old_position[0],)
@@ -99,6 +103,7 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
         updated_position = simulator.db_manager.db_cursor.fetchone()
         if updated_position:
             position = {
+                'id': old_position[0],
                 'pair': updated_position[0],
                 'buy_date': updated_position[1],
                 'buy_price': updated_position[2],
@@ -106,6 +111,8 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
                 'sell_price': updated_position[4],
                 'buy_signals': updated_position[5],
                 'sell_signals': updated_position[6],
+                'ratio': updated_position[7],
+                'position_duration': updated_position[8]
             }
             await simulator.send_position_embed(simulation['discord']['discord_channel_id'], "🎊 Closed Position", discord.Color.pink(), position)
         
@@ -138,7 +145,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
 
             # process current positions from API
             for position in current_positions:
-                position['pair'] = position.get('pair', "Unknown")
+                position['pair'] = position.get('pair', "")
                 position['buy_signals'] = json.dumps(position.get('buy_signals', []))
                 position['sell_signals'] = json.dumps(position.get('sell_signals', []))
                 positions.append(position)

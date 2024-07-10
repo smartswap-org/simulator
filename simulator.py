@@ -72,7 +72,7 @@ class Simulator:
         embed = discord.Embed(title=title, color=color)  # create an embed message
         # add fields to the embed message
         for key in position.keys():
-            embed.add_field(name=key, value=position[key], inline=False)
+            embed.add_field(name=key, value=position[key], inline=True)
         await channel.send(embed=embed)  # send the embed message to the channel
 
     def update_position_sell_info(self, simulation_name, start_ts, end_ts, sell_date, sell_price):
