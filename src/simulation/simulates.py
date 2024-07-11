@@ -23,11 +23,18 @@ async def send_current_positions_embed(simulator, channel_id, start_ts, end_ts, 
     if channel is None:
         return
 
-    title_line = f"- Simulation ({start_ts}-{end_ts})\n\nid | pair | buy_date | buy_price"
+    if isinstance(end_ts, str):
+        end_ts_datetime = datetime.strptime(end_ts, "%Y-%m-%d")
+    else:
+        end_ts_datetime = end_ts
+
+    title_line = f"- Simulation ({start_ts}-{end_ts})\n\npair | buy_date | buy_price | current_duration"
     
     message_lines = [title_line]
     for position in positions:
-        line = f"{position['pair']} | {position['buy_date']} | {position['buy_price']}"
+        buy_date_datetime = datetime.strptime(position['buy_date'], "%Y-%m-%d")
+        duration = end_ts_datetime - buy_date_datetime
+        line = f"{position['pair']} | {position['buy_date']} | {position['buy_price']} | {duration.days} days"
         message_lines.append(line)
     
     message_str = ""
