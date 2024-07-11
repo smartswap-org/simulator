@@ -14,7 +14,32 @@ from datetime import datetime, timedelta
 from src.discord.configs import get_simulations_config
 from src.simulation.positions import get_positions
 from src.discord.embeds import discord 
+import json 
 #from loguru import logger
+
+async def send_current_positions_embed(simulator, channel_id, start_ts, end_ts, positions):
+    guild = simulator.discord_bot.get_guild(int(simulator.bot_config.get("discord_id", "")))  # get the guild (server)
+    channel = guild.get_channel(int(channel_id))  # get the channel by ID
+    if channel is None:
+        return
+
+    title_line = f"- Simulation ({start_ts}-{end_ts})\n\nid | pair | buy_date | buy_price"
+    
+    message_lines = [title_line]
+    for position in positions:
+        line = f"{position['pair']} | {position['buy_date']} | {position['buy_price']}"
+        message_lines.append(line)
+    
+    message_str = ""
+    for line in message_lines:
+        if len(message_str) + len(line) + 6 > 2000:  # +6 for the code block and newline characters
+            await channel.send(f"```\n{message_str}\n```")
+            message_str = line + "\n"
+        else:
+            message_str += line + "\n"
+    
+    if message_str:
+        await channel.send(f"```\n{message_str}\n```")
 
 async def simulates(simulator):
     """
@@ -73,7 +98,7 @@ async def simulates(simulator):
 
                         if existing_position:
                             position_id = existing_position[0]
-                            await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"👨🏼‍💻 Current Position ({start_ts_config}-{end_ts})", discord.Color.orange(), position)
+                            #await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"👨🏼‍💻 Current Position ({start_ts_config}-{end_ts})", discord.Color.orange(), position)
                         else:
                             # insert new position into positions table
                             simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price) 
@@ -91,5 +116,14 @@ async def simulates(simulator):
                         simulator.db_manager.db_connection.commit()
                 else:
                     await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"❌ No any position ({start_ts_config}-{end_ts})", discord.Color.red(), {})
+
+                # send current position embed
+                await send_current_positions_embed(
+                    simulator=simulator,
+                    channel_id=simulation['discord']['discord_channel_id'],
+                    start_ts=start_ts_config,
+                    end_ts=end_ts,
+                    positions=positions
+                )
 
                 end_ts += timedelta(days=1)  # increment end timestamp by one day
