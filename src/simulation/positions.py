@@ -146,7 +146,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
     """
     try:
         previous_end_ts = end_ts - timedelta(days=2)
-        positions = []
+        positions_dict = {}  
 
         # check if there are previous positions to consider
         if previous_end_ts >= start_ts_config:
@@ -155,11 +155,14 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
             current_positions, previous_positions = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
 
             # process current positions from API
-            for position in current_positions:
-                position['pair'] = position.get('pair', "")
-                position['buy_signals'] = json.dumps(position.get('buy_signals', []))
-                position['sell_signals'] = json.dumps(position.get('sell_signals', []))
-                positions.append(position)
+            for current_position in current_positions:
+                key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
+                
+                # check if this position already exists
+                if key not in positions_dict:
+                    current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                    current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                    positions_dict[key] = current_position
 
             # update old positions based on new data
             for old_position in old_positions:
@@ -170,7 +173,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                         old_position[3] == current_position['buy_price'] and 
                         old_position[4] is None):
                         
-                        positions.append(current_position)
+                        positions_dict[(current_position['pair'], current_position['buy_date'], current_position['buy_price'])] = current_position
                         found = True
                         break
 
@@ -184,21 +187,28 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                             break
 
             # add current positions that are not in old positions
-            positions.extend([
-                current_position for current_position in current_positions 
-                if not any(old_position[1] == current_position.get('pair') and
-                           old_position[2] == current_position['buy_date'] and
-                           old_position[3] == current_position['buy_price'] and
-                           old_position[4] is None
-                           for old_position in old_positions)
-            ])
+            for current_position in current_positions:
+                key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
+                if key not in positions_dict:
+                    current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                    current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                    positions_dict[key] = current_position
 
         else:
             # fetch positions directly from API if no previous positions
             current_positions, _ = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
-            positions = current_positions
+            for current_position in current_positions:
+                key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
+                if key not in positions_dict:
+                    current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                    current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                    positions_dict[key] = current_position
+
+        # convert dictionary to list of positions
+        positions = list(positions_dict.values())
 
         return positions
+
     except Exception as e:
         logger.error(f"Error getting positions: {e}")
         return []
