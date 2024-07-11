@@ -14,6 +14,7 @@ import aiohttp
 from datetime import timedelta
 import sqlite3
 from src.discord.embeds import discord
+from src.discord.configs import get_simulations_config
 from loguru import logger
 
 async def fetch_positions_from_database(simulator, simulation_name, previous_end_ts):
@@ -47,22 +48,32 @@ async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
     return: Tuple containing current positions fetched from API and previous positions.
     """
     try:
-        pair = "Binance_SOLUSDT_1d"
-        url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?start_ts={start_ts_config.strftime('%Y-%m-%d')}&end_ts={end_ts.strftime('%Y-%m-%d')}&multi_positions={simulation['api']['multi_positions']}"
+        pairs = list(simulation['api']['pairs_list'])
+        all_current_positions = []
+        all_old_positions = []
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    response_json = await response.json()
-                    old_positions = response_json["result"][1]
-                    current_positions = response_json["result"][2]
-                    for stk in [old_positions, current_positions]:
-                        for position in stk:
+            for pair in pairs:
+                url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?start_ts={start_ts_config.strftime('%Y-%m-%d')}&end_ts={end_ts.strftime('%Y-%m-%d')}&multi_positions={simulation['api']['multi_positions']}"
+
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        response_json = await response.json()
+                        old_positions = response_json["result"][1]
+                        current_positions = response_json["result"][2]
+                        
+                        for position in old_positions:
                             position['pair'] = pair
-                    return current_positions, response_json["result"][1]
-                else:
-                    logger.error(f"Failed to fetch data from {url}, status code: {response.status}")
-                    return [], []
+                        for position in current_positions:
+                            position['pair'] = pair
+                        
+                        all_old_positions.extend(old_positions)
+                        all_current_positions.extend(current_positions)
+                    else:
+                        logger.error(f"Failed to fetch data from {url}, status code: {response.status}")
+
+        return all_current_positions, all_old_positions
+
     except Exception as e:
         logger.error(f"Error fetching positions from API: {e}")
         return [], []
