@@ -60,8 +60,6 @@ async def simulates(simulator):
                 if len(positions) > 0:
                     # process each position
                     for position in positions:
-                        await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"👨🏼‍💻 Current Position ({start_ts_config}-{end_ts})", discord.Color.orange(), position)
-
                         pair = position["pair"]
                         buy_date = position["buy_date"]
                         buy_price = position["buy_price"]
@@ -75,6 +73,7 @@ async def simulates(simulator):
 
                         if existing_position:
                             position_id = existing_position[0]
+                            await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"👨🏼‍💻 Current Position ({start_ts_config}-{end_ts})", discord.Color.orange(), position)
                         else:
                             # insert new position into positions table
                             simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price) 
