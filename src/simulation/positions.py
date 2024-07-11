@@ -145,24 +145,16 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
     return: List of positions fetched and processed.
     """
     try:
-        previous_end_ts = end_ts - timedelta(days=2)
+        max_positions = 100/int(simulation['positions']['position_%_invest'])
+        previous_end_ts = end_ts - timedelta(days=1)
         positions_dict = {}  
 
         # check if there are previous positions to consider
-        if previous_end_ts >= start_ts_config:
+        if previous_end_ts- timedelta(days=1) >= start_ts_config:
+           
             old_positions = await fetch_positions_from_database(simulator, simulation_name, previous_end_ts)
-
+            print("IMPORTANT", old_positions, start_ts_config, end_ts, previous_end_ts) #end_ts-timedelta(days=2)
             current_positions, previous_positions = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
-
-            # process current positions from API
-            for current_position in current_positions:
-                key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
-                
-                # check if this position already exists
-                if key not in positions_dict:
-                    current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
-                    current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
-                    positions_dict[key] = current_position
 
             # update old positions based on new data
             for old_position in old_positions:
@@ -185,24 +177,27 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                             previous_position['sell_signals'] = json.dumps(previous_position.get('sell_signals', []))
                             await update_positions_in_database(simulator, simulation_name, simulation, previous_position, old_position)
                             break
-
-            # add current positions that are not in old positions
+            #print(start_ts_config, end_ts, len(old_positions), len(current_positions), len(positions_dict))
+            # process current positions from API
             for current_position in current_positions:
-                key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
-                if key not in positions_dict:
-                    current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
-                    current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
-                    positions_dict[key] = current_position
-
+                if len(positions_dict) < max_positions: 
+                    key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
+                    
+                    # check if this position already exists
+                    if key not in positions_dict:
+                        current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                        current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                        positions_dict[key] = current_position                    
         else:
             # fetch positions directly from API if no previous positions
             current_positions, _ = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
             for current_position in current_positions:
-                key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
-                if key not in positions_dict:
-                    current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
-                    current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
-                    positions_dict[key] = current_position
+                if len(positions_dict) < max_positions: 
+                    key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
+                    if key not in positions_dict:
+                        current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                        current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                        positions_dict[key] = current_position
 
         # convert dictionary to list of positions
         positions = list(positions_dict.values())
