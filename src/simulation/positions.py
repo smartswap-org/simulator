@@ -13,6 +13,7 @@ import json
 import aiohttp
 from datetime import timedelta
 import sqlite3
+from datetime import datetime
 from src.discord.embeds import discord
 from src.discord.configs import get_simulations_config
 from loguru import logger
@@ -153,7 +154,6 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
         if previous_end_ts- timedelta(days=1) >= start_ts_config:
            
             old_positions = await fetch_positions_from_database(simulator, simulation_name, previous_end_ts)
-            print("IMPORTANT", old_positions, start_ts_config, end_ts, previous_end_ts) #end_ts-timedelta(days=2)
             current_positions, previous_positions = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
 
             # update old positions based on new data
@@ -185,9 +185,10 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                     
                     # check if this position already exists
                     if key not in positions_dict:
-                        current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
-                        current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
-                        positions_dict[key] = current_position                    
+                        if datetime.strptime(current_position['buy_date'], "%Y-%m-%d") == end_ts: # ensure that we dont take a old current position
+                            current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                            current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                            positions_dict[key] = current_position                    
         else:
             # fetch positions directly from API if no previous positions
             current_positions, _ = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
@@ -195,9 +196,10 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                 if len(positions_dict) < max_positions: 
                     key = (current_position['pair'], current_position['buy_date'], current_position['buy_price'])
                     if key not in positions_dict:
-                        current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
-                        current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
-                        positions_dict[key] = current_position
+                        if datetime.strptime(current_position['buy_date'], "%Y-%m-%d") == end_ts: # ensure that we dont take a old current position
+                            current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
+                            current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
+                            positions_dict[key] = current_position
 
         # convert dictionary to list of positions
         positions = list(positions_dict.values())
