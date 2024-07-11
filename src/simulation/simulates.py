@@ -46,7 +46,17 @@ async def send_current_positions_embed(simulator, channel_id, start_ts, end_ts, 
             message_str += line + "\n"
     
     if message_str:
-        await channel.send(f"```\n{message_str}\n```")
+        message_str = f"```\n{message_str}\n```"
+
+        # retrieve the last messages sent by the bot in the channel
+        async for message in channel.history(limit=10):  
+            if message.author == simulator.discord_bot.user:  # check if the message is from the bot
+                # check if the content of the last message matches the current message
+                if message.content == message_str:
+                    return  # do not send the message if it's the same as the last one
+        
+        # send the message if it is not a duplicate
+        await channel.send(message_str)
 
 async def simulates(simulator):
     """
@@ -121,16 +131,15 @@ async def simulates(simulator):
                                                                 VALUES (?, ?, ?, ?)''', 
                                                             (simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), position_id))
                         simulator.db_manager.db_connection.commit()
+                                    # send current position embed
+                    await send_current_positions_embed(
+                        simulator=simulator,
+                        channel_id=simulation['discord']['discord_channel_id'],
+                        start_ts=start_ts_config,
+                        end_ts=end_ts,
+                        positions=positions
+                    )
                 else:
                     await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"❌ No any position ({start_ts_config}-{end_ts})", discord.Color.red(), {})
-
-                # send current position embed
-                await send_current_positions_embed(
-                    simulator=simulator,
-                    channel_id=simulation['discord']['discord_channel_id'],
-                    start_ts=start_ts_config,
-                    end_ts=end_ts,
-                    positions=positions
-                )
 
                 end_ts += timedelta(days=1)  # increment end timestamp by one day
