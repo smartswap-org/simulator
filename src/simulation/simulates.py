@@ -28,35 +28,34 @@ async def send_current_positions_embed(simulator, channel_id, start_ts, end_ts, 
     else:
         end_ts_datetime = end_ts
 
-    title_line = f"- Simulation ({start_ts}-{end_ts})\n\npair | buy_date | buy_price | current_duration"
+    title_line = f"⌛ Current Positions"
     
-    message_lines = [title_line]
+    description_lines = []
+    description_lines.append('pair | buy_date | buy_price | duration')
+    #description_lines.append('')
     for position in positions:
         buy_date_datetime = datetime.strptime(position['buy_date'], "%Y-%m-%d")
         duration = end_ts_datetime - buy_date_datetime
         line = f"{position['pair']} | {position['buy_date']} | {position['buy_price']} | {duration.days} days"
-        message_lines.append(line)
+        description_lines.append(line)
     
-    message_str = ""
-    for line in message_lines:
-        if len(message_str) + len(line) + 6 > 2000:  # +6 for the code block and newline characters
-            await channel.send(f"```\n{message_str}\n```")
-            message_str = line + "\n"
-        else:
-            message_str += line + "\n"
-    
-    if message_str:
-        message_str = f"```\n{message_str}\n```"
+    embed = discord.Embed(
+        title=title_line,
+        description="\n".join(description_lines),
+        color=discord.Color.blue()
+    )
 
-        # retrieve the last messages sent by the bot in the channel
-        async for message in channel.history(limit=10):  
-            if message.author == simulator.discord_bot.user:  # check if the message is from the bot
-                # check if the content of the last message matches the current message
-                if message.content == message_str:
-                    return  # do not send the message if it's the same as the last one
-        
-        # send the message if it is not a duplicate
-        await channel.send(message_str)
+    #embed.set_author(name="Smartswap", icon_url="https://avatars.githubusercontent.com/u/171923264?s=200&v=4")
+    embed.set_footer(text=f"Simulation from {start_ts} to {end_ts}")
+
+    # Check for duplicate messages in the last 10 messages
+    async for message in channel.history(limit=10):
+        if message.author == simulator.discord_bot.user and message.embeds:
+            if message.embeds[0].description == embed.description and message.embeds[0].footer.text == embed.footer.text:
+                return  # Do not send the message if it's the same as the last one
+
+    await channel.send(embed=embed)
+    
 
 async def simulates(simulator):
     """
