@@ -156,6 +156,10 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
             old_positions = await fetch_positions_from_database(simulator, simulation_name, previous_end_ts)
             current_positions, previous_positions = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
 
+            # this is usefull if we wants to send every positions (like signals) on discord 
+            # and not a max of 5 on same time for ex
+            if simulation['positions']['position_%_invest'] == "-1": max_positions = len(current_positions) 
+
             # update old positions based on new data
             for old_position in old_positions:
                 found = False
