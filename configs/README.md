@@ -52,5 +52,4 @@ Example of a simulation configuration:
 }
 ```
 Notes:
-Notes:
 - `position_%_invest`: This parameter defines a division. For example, if you specify 20%, it corresponds to 100/20, allowing a maximum of 5 positions simultaneously. If you set `position_%_invest` to -1, it indicates no limit on the number of positions. You must set a number such that 100/`position_%_invest` provides a real number for funds table creation. See `src/db/manager.py`, method `create_funds_table` of the `DatabaseManager` class.
