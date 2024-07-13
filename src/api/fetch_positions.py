@@ -1,3 +1,15 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the functions to interract with the API and get all
+# old and current positions for the differents pairs and their timestamps
+# intervalls (start_ts - end_ts)
+# =============================================================================
+
 from loguru import logger
 import aiohttp
 
