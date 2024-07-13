@@ -10,6 +10,7 @@
 # =============================================================================
 
 import aiohttp
+import json
 from datetime import datetime, timedelta
 from src.discord.configs import get_simulations_config
 from src.simulation.positions import get_positions
@@ -67,12 +68,12 @@ async def simulates(simulator):
                         pair = position["pair"]
                         buy_date = position["buy_date"]
                         buy_price = position["buy_price"]
-                        sell_date = position.get("sell_date")
-                        sell_price = position.get("sell_price")
+                        buy_index = position["buy_index"]
+                        buy_signals = position["buy_signals"]
 
                         # check if the position already exists
-                        simulator.db_manager.db_cursor.execute('''SELECT id FROM positions WHERE pair = ? AND buy_date = ? AND buy_price = ? AND (sell_date = ? OR sell_date IS NULL) AND (sell_price = ? OR sell_price IS NULL)''', 
-                                                            (pair, buy_date, buy_price, sell_date, sell_price))
+                        simulator.db_manager.db_cursor.execute('''SELECT id FROM positions WHERE pair = ? AND buy_date = ? AND buy_price = ? AND buy_index = ? AND buy_signals = ?''', 
+                                                            (pair, buy_date, buy_price, buy_index, json.dumps(buy_signals)))
                         existing_position = simulator.db_manager.db_cursor.fetchone()
 
                         if existing_position:
@@ -80,9 +81,9 @@ async def simulates(simulator):
                             #await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"👨🏼‍💻 Current Position ({start_ts_config}-{end_ts})", discord.Color.orange(), position)
                         else:
                             # insert new position into positions table
-                            simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price) 
+                            simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, buy_index, buy_signals) 
                                                                     VALUES (?, ?, ?, ?, ?)''', 
-                                                                (pair, buy_date, buy_price, sell_date, sell_price))
+                                                                (pair, buy_date, buy_price, buy_index, buy_signals))
                             simulator.db_manager.db_connection.commit()
                             position_id = simulator.db_manager.db_cursor.lastrowid
                             await send_position_embed(simulator, simulation['discord']['discord_channel_id'], "🚀 Opened Position", discord.Color.brand_green(), position)
@@ -93,7 +94,7 @@ async def simulates(simulator):
                                                                 VALUES (?, ?, ?, ?)''', 
                                                             (simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), position_id))
                         simulator.db_manager.db_connection.commit()
-                                    # send current position embed
+                    # send current position embed
                     await send_current_positions_embed(
                         simulator=simulator,
                         channel_id=simulation['discord']['discord_channel_id'],
