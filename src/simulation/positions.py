@@ -15,6 +15,7 @@ from datetime import datetime
 from loguru import logger
 from src.db.positions import fetch_positions_from_database, update_positions_in_database
 from src.api.fetch_positions import fetch_positions_from_api
+from src.discord.logs.position import send_position_embed
 
 async def get_positions(simulator, simulation_name, simulation, start_ts_config, end_ts):
     """
@@ -37,7 +38,7 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
         # check if there are previous positions to consider
         if previous_end_ts- timedelta(days=1) >= start_ts_config:
            
-            old_positions = await fetch_positions_from_database(simulator, simulation_name, previous_end_ts)
+            old_positions = await fetch_positions_from_database(simulator.db_manager, simulation_name, previous_end_ts)
             current_positions, previous_positions = await fetch_positions_from_api(simulation, start_ts_config, end_ts)
 
             # this is usefull if we wants to send every positions (like signals) on discord 
