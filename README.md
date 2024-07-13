@@ -40,7 +40,8 @@ To begin using the Smartswap Simulator, follow these steps:
 2. **Install Requirements**: `pip install -r requirements.txt`
 3. **Configure Discord Settings**: Refer to `configs/README.MD` for instructions on creating `configs/discord_bot.json`.
 4. **Configure Simulations**: Refer to `configs/README.MD` for instructions on creating `configs/simulations.json`.
-5. **Run the Simulator**: `python simulator.py`
+5. **Clone, Configure and Run QTSBE API**: Refer to `https://github.com/simonpotel/QTSBE`
+6. **Run the Simulator**: `python simulator.py`
 
 ---
 

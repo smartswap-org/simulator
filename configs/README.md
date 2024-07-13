@@ -51,3 +51,5 @@ Example of a simulation configuration:
     }
 }
 ```
+Notes:
+- position_%_invest: This parameter defines a division. For example, if you specify 20%, it corresponds to 100/20, allowing a maximum of 5 positions simultaneously. If you set position_%_invest: -1, it indicates no limit on the number of positions.
