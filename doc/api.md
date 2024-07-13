@@ -1,6 +1,6 @@
 # QTSBE API Usage for Smartswap Simulator
 
-QTSBE API is used to fetch old and current positions for different trading pairs, along with their respective timestamp intervals.
+[QTSBE](https://github.com/simonpotel/QTSBE) API is used to fetch old and current positions for different trading pairs, along with their respective timestamp intervals.
 
 ### Purpose
 
