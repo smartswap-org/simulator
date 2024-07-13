@@ -37,7 +37,7 @@ async def send_current_positions_embed(simulator, channel_id, start_ts, end_ts, 
     embed = discord.Embed(
         title=title_line,
         description="\n".join(description_lines),
-        color=discord.Color.blue()
+        color=discord.Color.orange()
     )
 
     #embed.set_author(name="Smartswap", icon_url="https://avatars.githubusercontent.com/u/171923264?s=200&v=4")
