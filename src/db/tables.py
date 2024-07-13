@@ -1,3 +1,13 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the fonctions to create every tables used in the database.
+# =============================================================================
+
 from loguru import logger
 import sqlite3
 

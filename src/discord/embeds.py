@@ -1,3 +1,13 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file all the fonctions to interract with Discord Embeds.
+# =============================================================================
+
 from datetime import datetime
 import discord
 import time

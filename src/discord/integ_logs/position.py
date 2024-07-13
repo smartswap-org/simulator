@@ -1,6 +1,15 @@
-import discord 
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the fonctions thats are used to logs in Discord the
+# open or close positions.
+# =============================================================================
 
-# new or close position message
+import discord 
 
 async def send_position_embed(simulator, channel_id, title, color, position):
     """

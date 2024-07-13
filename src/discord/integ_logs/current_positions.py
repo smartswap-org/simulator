@@ -1,3 +1,14 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains all the fonctions thats are used to logs in Discord the
+# current positions of a ts interval.
+# =============================================================================
+
 from datetime import datetime
 import discord
 

@@ -1,3 +1,14 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the fonctions to log messages on a channel in Discord.
+# This is used for admin logs (such as bot connections) or errors.
+# =============================================================================
+
 import discord 
 from src.discord.embeds import send_embed
 

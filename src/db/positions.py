@@ -1,3 +1,14 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the functions used to interract with database to
+# fetch, update, save positions.
+# =============================================================================
+
 import discord 
 from loguru import logger
 from src.discord.integ_logs.position import send_position_embed
@@ -75,8 +86,7 @@ async def update_positions_in_database(simulator, simulation_name, simulation, p
         logger.debug(f"Position updated in database: {simulation_name}, {old_position}")
     except sqlite3.Error as e:
         logger.error(f"Error updating position in database: {e}")
-
-    
+ 
 async def get_positions_for_simulation(db_manager, simulation_name, start_ts, end_ts):
     """
     Retrieve positions for a given simulation from the database.
@@ -100,7 +110,6 @@ async def get_positions_for_simulation(db_manager, simulation_name, start_ts, en
     except sqlite3.Error as e:
         logger.error(f"An error occurred while retrieving positions for simulation: {e}")
         return None  # return None if an error occurred
-
 
 async def save_position(db_manager, pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals):
     """

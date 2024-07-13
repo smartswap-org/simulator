@@ -1,3 +1,14 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the functions used to manage differents simulations
+# timestamps. (start_ts - end_ts). 
+# =============================================================================
+
 from loguru import logger
 import sqlite3
 
@@ -35,7 +46,6 @@ def delete_simulation(db_manager, simulation_name, start_ts, end_ts):
         logger.debug(f"Simulation deleted: {simulation_name}, {start_ts} to {end_ts}")
     except sqlite3.Error as e:
         logger.error(f"An error occurred while deleting simulation: {e}")
-
 
 def save_simulation_data(db_manager, simulation_name, start_ts, end_ts):
     """
