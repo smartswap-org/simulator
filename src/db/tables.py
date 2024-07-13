@@ -34,6 +34,7 @@ async def create_tables(db_manager):
                               sell_index INTEGER,
                               position_duration INTEGER,
                               ratio REAL,
+                              fund_slot REAL,
                               buy_signals TEXT,
                               sell_signals TEXT)''')
     

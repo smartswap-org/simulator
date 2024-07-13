@@ -11,6 +11,7 @@
 
 import aiohttp
 import json
+from loguru import logger
 from datetime import datetime, timedelta
 from src.discord.configs import get_simulations_config
 from src.simulation.positions import get_positions
@@ -19,6 +20,7 @@ from src.discord.integ_logs.current_positions import send_current_positions_embe
 from src.db.tables import create_funds_table
 from src.discord.integ_logs.position import send_position_embed
 from src.db.simulation import save_simulation_data    
+from src.simulation.fund_slot import find_free_fund_slot
 
 async def simulates(simulator):
     """
@@ -51,13 +53,14 @@ async def simulates(simulator):
 
             # loop through dates from start to end timestamp
             while end_ts <= end_ts_config:
-                positions = await get_positions(
+                positions, fund_slots = await get_positions(
                     simulator, 
                     simulation_name, 
                     simulation, 
                     start_ts_config,
                     end_ts)
 
+                logger.info(positions)
 
                 # save simulation data
                 save_simulation_data(simulator.db_manager, simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"))
@@ -81,9 +84,11 @@ async def simulates(simulator):
                             #await simulator.send_position_embed(simulation['discord']['discord_channel_id'], f"👨🏼‍💻 Current Position ({start_ts_config}-{end_ts})", discord.Color.orange(), position)
                         else:
                             # insert new position into positions table
-                            simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, buy_index, buy_signals) 
-                                                                    VALUES (?, ?, ?, ?, ?)''', 
-                                                                (pair, buy_date, buy_price, buy_index, buy_signals))
+                            fund_slot = await find_free_fund_slot(fund_slots)
+                            fund_slots[fund_slot-1] = True 
+                            simulator.db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, buy_index, buy_signals, fund_slot) 
+                                                                    VALUES (?, ?, ?, ?, ?, ?)''', 
+                                                                (pair, buy_date, buy_price, buy_index, buy_signals, fund_slot))
                             simulator.db_manager.db_connection.commit()
                             position_id = simulator.db_manager.db_cursor.lastrowid
                             await send_position_embed(simulator, simulation['discord']['discord_channel_id'], "🚀 Opened Position", discord.Color.brand_green(), position)

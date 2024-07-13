@@ -111,7 +111,7 @@ async def get_positions_for_simulation(db_manager, simulation_name, start_ts, en
         logger.error(f"An error occurred while retrieving positions for simulation: {e}")
         return None  # return None if an error occurred
 
-async def save_position(db_manager, pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals):
+async def save_position(db_manager, pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals, fund_slot):
     """
     Save position data to the database.
     
@@ -137,9 +137,9 @@ async def save_position(db_manager, pair, buy_date, buy_price, sell_date, sell_p
         if position:
             position_id = position[0]  # get the position ID
         else:
-            db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                                   (pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals))
+            db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals, fund_slot) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                                   (pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals, fund_slot))
             db_manager.db_connection.commit()  # commit the changes
             position_id = db_manager.db_cursor.lastrowid  # get the ID of the last inserted row
         return position_id  # return the position ID

@@ -30,7 +30,8 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
     return: List of positions fetched and processed.
     """
     try:
-        max_positions = 100/int(simulation['positions']['position_%_invest'])
+        max_positions = int(100/int(simulation['positions']['position_%_invest']))
+        fund_slots = [False] * max_positions
         previous_end_ts = end_ts - timedelta(days=1)
         positions_dict = {}  
 
@@ -52,8 +53,8 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                         old_position[2] == current_position['buy_date'] and 
                         old_position[3] == current_position['buy_price'] and 
                         old_position[4] is None):
-                        
                         positions_dict[(current_position['pair'], current_position['buy_date'], current_position['buy_price'])] = current_position
+                        fund_slots[int(old_position[10])-1] = True
                         found = True
                         break
 
@@ -87,13 +88,13 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                         if datetime.strptime(current_position['buy_date'], "%Y-%m-%d") == end_ts: # ensure that we dont take a old current position
                             current_position['buy_signals'] = json.dumps(current_position.get('buy_signals', []))
                             current_position['sell_signals'] = json.dumps(current_position.get('sell_signals', []))
-                            positions_dict[key] = current_position
+                            positions_dict[key] = current_position   
 
         # convert dictionary to list of positions
         positions = list(positions_dict.values())
 
-        return positions
+        return positions, fund_slots
 
     except Exception as e:
         logger.error(f"Error getting positions: {e}")
-        return []
+        return [], []
