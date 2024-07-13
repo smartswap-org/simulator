@@ -1,10 +1,6 @@
 import discord 
 from loguru import logger
-<<<<<<< Updated upstream
-from src.discord.logs.position import send_position_embed
-=======
 from src.discord.integ_logs.position import send_position_embed
->>>>>>> Stashed changes
 import sqlite3
 
 async def fetch_positions_from_database(db_manager, simulation_name, previous_end_ts):

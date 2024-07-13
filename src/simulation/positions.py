@@ -15,7 +15,6 @@ from datetime import datetime
 from loguru import logger
 from src.db.positions import fetch_positions_from_database, update_positions_in_database
 from src.api.fetch_positions import fetch_positions_from_api
-from src.discord.logs.position import send_position_embed
 
 async def get_positions(simulator, simulation_name, simulation, start_ts_config, end_ts):
     """

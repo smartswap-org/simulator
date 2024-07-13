@@ -16,11 +16,7 @@ import socket
 from discord.ext import tasks
 from src.discord.configs import get_discord_config
 from src.db.manager import DatabaseManager
-<<<<<<< Updated upstream
-from src.discord.logs.log import log
-=======
 from src.discord.integ_logs.log import log
->>>>>>> Stashed changes
 from discord import Activity, ActivityType
 from datetime import datetime
 from loguru import logger
