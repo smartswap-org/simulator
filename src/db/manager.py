@@ -115,6 +115,36 @@ class DatabaseManager:
             logger.error(f"An error occurred while saving position: {e}")
             return None  # return None if an error occurred
 
+    def create_funds_table(self, simulation_name, position_percent_invest):
+        if int(position_percent_invest) <= 0: 
+            logger.debug(f"Not creating funds_table for {simulation_name}, % invest is too low ({position_percent_invest})")
+            return
+        table_name = f"funds_{simulation_name}"
+        
+        # check if the table already exists
+        self.db_cursor.execute(f'''SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}' ''')
+        if self.db_cursor.fetchone():
+            logger.info(f"Table {table_name} already exists.")
+            return
+        
+        # calculate the number of columns based on position_percent_invest
+        num_columns = 100 // int(position_percent_invest)
+        column_definitions = ', '.join([f'column_{i} REAL' for i in range(1, num_columns + 1)])
+        
+        # create the table with the calculated columns and an additional 'benefits' column
+        create_table_sql = f'''CREATE TABLE {table_name} (
+                                  start_ts TEXT,
+                                  end_ts TEXT,
+                                  {column_definitions},
+                                  benefits REAL,
+                                  PRIMARY KEY (start_ts, end_ts))'''
+        try:
+            self.db_cursor.execute(create_table_sql)
+            self.db_connection.commit()
+            logger.info(f"Table {table_name} created successfully.")
+        except sqlite3.Error as e:
+            logger.error(f"An error occurred while creating table {table_name}: {e}")
+    
     def get_positions_for_simulation(self, simulation_name, start_ts, end_ts):
         """
         Retrieve positions for a given simulation from the database.

@@ -66,6 +66,7 @@ async def simulates(simulator):
     async with aiohttp.ClientSession() as session:
         simulates_config = get_simulations_config()  # get simulations configuration
         for simulation_name, simulation in simulates_config.items():
+            simulator.db_manager.create_funds_table(simulation_name, simulation['positions']['position_%_invest'])
             start_ts_config = datetime.strptime(simulation["api"]["start_ts"], "%Y-%m-%d")
 
             if simulation["api"]["end_ts"]:
