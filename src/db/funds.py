@@ -12,6 +12,7 @@
 import sqlite3
 from loguru import logger
 from src.db.positions import get_ratios_and_fund_slots_by_sell_date
+from src.discord.integ_logs.funds import send_funds_embed
 
 async def get_fund_rows_by_timestamp(db_manager, simulation_name, start_ts, end_ts):
     """
@@ -87,28 +88,32 @@ async def insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, colum
     except sqlite3.Error as e:
         logger.error(f"An error occurred while inserting an entry into {table_name}: {e}")
 
-async def update_fund_slots(db_manager, start_ts, end_ts, simulation_name):
+async def update_fund_slots(simulator, start_ts, end_ts, simulation_name, simulation):
     """
     Update the fund slots in the funds_{simulation_name} table with new values based on ratios.
     """
     try:
         ratios_and_fund_slots = await get_ratios_and_fund_slots_by_sell_date(
-            db_manager=db_manager, 
+            db_manager=simulator.db_manager, 
             sell_date=end_ts
         ) 
-        last_fund_entry = await get_last_fund_entry(db_manager, simulation_name)
+        last_fund_entry = await get_last_fund_entry(simulator.db_manager, simulation_name)
         if last_fund_entry is None:
             logger.error(f"No entries found in the funds_{simulation_name} table. \n\n last_fund_entry = {last_fund_entry}, end_ts= {end_ts}")
             return
-
-        for ratio, fund_slot in ratios_and_fund_slots:
-            column_name = f"fund_{int(fund_slot)}"
-            if column_name in last_fund_entry:
-                last_fund_entry[column_name] = last_fund_entry[column_name] * ratio
-            else:
-                logger.error(f"Column {column_name} not found in the last entry of the funds_{simulation_name} table.")
-
-        await insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, last_fund_entry, benefits=0.0)
+        
+        if len(ratios_and_fund_slots) > 0:
+            new_fund_entry = last_fund_entry.copy()
+            for ratio, fund_slot in ratios_and_fund_slots:
+                column_name = f"fund_{int(fund_slot)}"
+                if column_name in new_fund_entry:
+                    new_fund_entry[column_name] = new_fund_entry[column_name] * ratio
+                else:
+                    logger.error(f"Column {column_name} not found in the last entry of the funds_{simulation_name} table.")
+            await send_funds_embed(simulator, simulation['discord']['discord_channel_id'], start_ts, end_ts, last_fund_entry, new_fund_entry)
+            await insert_fund_entry(simulator.db_manager, simulation_name, start_ts, end_ts, new_fund_entry, benefits=0.0)
+        else:
+            await insert_fund_entry(simulator.db_manager, simulation_name, start_ts, end_ts, last_fund_entry, benefits=0.0)
         logger.info(f"Updated fund slots for simulation {simulation_name} from {start_ts} to {end_ts}.")
 
     except sqlite3.Error as e:

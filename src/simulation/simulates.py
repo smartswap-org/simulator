@@ -111,5 +111,5 @@ async def simulates(simulator):
                 else:
                     await send_position_embed(simulator, simulation['discord']['discord_channel_id'], f"❌ No any position ({start_ts_config}-{end_ts})", discord.Color.red(), {})
 
-                await update_fund_slots(simulator.db_manager, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), simulation_name)
+                await update_fund_slots(simulator, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), simulation_name, simulation)
                 end_ts += timedelta(days=1)  # increment end timestamp by one day
