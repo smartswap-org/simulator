@@ -1,3 +1,13 @@
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the fonctions to get configs from folder configs/
+# =============================================================================
+
 import json
 
 def get_config(config):

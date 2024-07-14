@@ -13,17 +13,17 @@
 
 import discord
 import socket
+import sqlite3
+import argparse
+import os
 from discord.ext import tasks
-from src.discord.configs import get_discord_config
-from src.discord.embeds import send_embed
-from src.db.manager import DatabaseManager
 from discord import Activity, ActivityType
 from datetime import datetime
 from loguru import logger
-import sqlite3
+from src.db.manager import DatabaseManager
+from src.discord.integ_logs.log import log
+from src.discord.configs import get_discord_config
 from src.simulation.simulates import simulates 
-import argparse
-import os
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')
@@ -46,43 +46,6 @@ class Simulator:
         self.discord_bot = discord_bot  # Discord bot instance
         self.bot_config = bot_config  # configuration for the bot, available in configs/discord_bot.json
         self.db_manager = DatabaseManager()  # SQLite3 manager (creates tables, database, etc.)
-
-    async def log(self, channel_id, title, log): 
-        """
-        Log a message in a channel on Discord
-        """
-        guild = self.discord_bot.get_guild(int(self.bot_config.get("discord_id", "")))  # get the guild (server)
-        channel = guild.get_channel(int(channel_id))  # get the channel by ID
-        if channel is None:
-            return
-        # get the highest role of the bot to set the embed color
-        highest_role = max(self.discord_bot.guilds[0].get_member(self.discord_bot.user.id).roles, 
-                           key=lambda r: r.position if r is not None else 0)
-        color = highest_role.color if highest_role else discord.Color.green()
-        await send_embed(channel, title, log, color)  # send an embed message to the channel
-
-    async def send_position_embed(self, channel_id, title, color, position):
-        """
-        Send a detailed embed message about a position in a channel on Discord.
-        Avoid sending duplicate messages by checking the last message in the channel.
-        """
-        guild = self.discord_bot.get_guild(int(self.bot_config.get("discord_id", "")))  # get the guild (server)
-        channel = guild.get_channel(int(channel_id))  # get the channel by ID
-        if channel is None:
-            return
-
-        embed = discord.Embed(title=title, color=color)  # create an embed message
-        for key in position.keys():
-            embed.add_field(name=key, value=position[key], inline=True)
-
-        # retrieve the last message sent by the bot in the channel
-        async for message in channel.history(limit=10):  
-            if message.author == self.discord_bot.user:  # check if the message is from the bot
-                # compare the content of the last embed message with the current embed
-                if message.embeds and message.embeds[0].to_dict() == embed.to_dict():
-                    return  # do not send the message if it's the same as the last one
-
-        await channel.send(embed=embed)  # send the embed message to the channel
 
     def update_position_sell_info(self, simulation_name, start_ts, end_ts, sell_date, sell_price):
         """
@@ -109,7 +72,7 @@ class Simulator:
         """
         Start the simulation and log the start message to Discord
         """
-        await self.log(self.bot_config["logs_channel_id"], "🚀 Started", 
+        await log(self, self.bot_config["logs_channel_id"], "🚀 Started", 
                        f"Simulator has been started on host: {socket.gethostname()}")  
         self.simulates_loop.start()  # start the simulation loop
 

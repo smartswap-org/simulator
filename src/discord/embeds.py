@@ -1,6 +1,16 @@
-from datetime import datetime
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file all the fonctions to interract with Discord Embeds.
+# =============================================================================
+
 import discord
 import time
+from datetime import datetime
 
 bot_start_time = time.time()
 
