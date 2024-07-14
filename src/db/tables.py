@@ -8,8 +8,8 @@
 # This file contains the fonctions to create every tables used in the database.
 # =============================================================================
 
-from loguru import logger
 import sqlite3
+from loguru import logger
 
 async def create_tables(db_manager):
     """

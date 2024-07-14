@@ -10,9 +10,10 @@
 # =============================================================================
 
 import discord 
+import sqlite3
 from loguru import logger
 from src.discord.integ_logs.position import send_position_embed
-import sqlite3
+
 
 async def fetch_positions_from_database(db_manager, simulation_name, previous_end_ts):
     """

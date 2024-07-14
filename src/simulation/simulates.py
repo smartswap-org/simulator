@@ -13,14 +13,14 @@ import aiohttp
 import json
 from loguru import logger
 from datetime import datetime, timedelta
-from src.discord.configs import get_simulations_config
 from src.simulation.positions import get_positions
-from src.discord.embeds import discord 
-from src.discord.integ_logs.current_positions import send_current_positions_embed
-from src.db.tables import create_funds_table
-from src.discord.integ_logs.position import send_position_embed
-from src.db.simulation import save_simulation_data    
 from src.simulation.fund_slot import find_free_fund_slot
+from src.discord.embeds import discord 
+from src.discord.configs import get_simulations_config
+from src.discord.integ_logs.current_positions import send_current_positions_embed
+from src.discord.integ_logs.position import send_position_embed
+from src.db.tables import create_funds_table
+from src.db.simulation import save_simulation_data    
 
 async def simulates(simulator):
     """

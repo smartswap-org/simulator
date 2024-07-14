@@ -9,8 +9,8 @@
 # current positions of a ts interval.
 # =============================================================================
 
-from datetime import datetime
 import discord
+from datetime import datetime
 
 async def send_current_positions_embed(simulator, channel_id, start_ts, end_ts, positions):
     guild = simulator.discord_bot.get_guild(int(simulator.bot_config.get("discord_id", "")))  # get the guild (server)

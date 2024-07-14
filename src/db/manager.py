@@ -10,9 +10,9 @@
 # position data.
 # =============================================================================
 
-from src.db.tables import create_tables
 import sqlite3
 import asyncio
+from src.db.tables import create_tables
 
 class DatabaseManager:
     def __init__(self, db_path='simulator.db'):

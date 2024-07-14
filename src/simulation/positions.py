@@ -66,7 +66,6 @@ async def get_positions(simulator, simulation_name, simulation, start_ts_config,
                             previous_position['sell_signals'] = json.dumps(previous_position.get('sell_signals', []))
                             await update_positions_in_database(simulator, simulation_name, simulation, previous_position, old_position)
                             break
-            #print(start_ts_config, end_ts, len(old_positions), len(current_positions), len(positions_dict))
             # process current positions from API
             for current_position in current_positions:
                 if len(positions_dict) < max_positions: 

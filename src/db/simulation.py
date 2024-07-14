@@ -9,8 +9,8 @@
 # timestamps. (start_ts - end_ts). 
 # =============================================================================
 
-from loguru import logger
 import sqlite3
+from loguru import logger
 
 def update_simulation_data(db_manager, simulation_name, start_ts, end_ts):
     """

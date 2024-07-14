@@ -13,17 +13,17 @@
 
 import discord
 import socket
+import sqlite3
+import argparse
+import os
 from discord.ext import tasks
-from src.discord.configs import get_discord_config
-from src.db.manager import DatabaseManager
-from src.discord.integ_logs.log import log
 from discord import Activity, ActivityType
 from datetime import datetime
 from loguru import logger
-import sqlite3
+from src.db.manager import DatabaseManager
+from src.discord.integ_logs.log import log
+from src.discord.configs import get_discord_config
 from src.simulation.simulates import simulates 
-import argparse
-import os
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')

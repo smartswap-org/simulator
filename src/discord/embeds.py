@@ -8,9 +8,9 @@
 # This file all the fonctions to interract with Discord Embeds.
 # =============================================================================
 
-from datetime import datetime
 import discord
 import time
+from datetime import datetime
 
 bot_start_time = time.time()
 

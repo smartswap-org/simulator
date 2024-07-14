@@ -10,8 +10,8 @@
 # intervalls (start_ts - end_ts)
 # =============================================================================
 
-from loguru import logger
 import aiohttp
+from loguru import logger
 
 async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
     """

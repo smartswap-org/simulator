@@ -1,5 +1,16 @@
-from loguru import logger
+# =============================================================================
+# Smartswap Simulator
+# =============================================================================
+# Repository: https://github.com/smartswap-org/simulator
+# Author of this code: Simon
+# =============================================================================
+# Description of this file:
+# This file contains the functions to determine continuous funds with positions 
+# results during simulations. 
+# =============================================================================
+
 import sqlite3
+from loguru import logger
 
 async def get_fund_rows_by_timestamp(db_manager, simulation_name, start_ts, end_ts):
     """
