@@ -7,6 +7,8 @@
 # Description of this file:
 # This file contains the functions to determine continuous funds with positions 
 # results during simulations. 
+# ⚠️ Notes:
+# the "adjust_with_profits_if_loss" fonctionnaly has not been tested.
 # =============================================================================
 
 import sqlite3
@@ -107,12 +109,17 @@ async def update_fund_slots(simulator, start_ts, end_ts, simulation_name, simula
             for ratio, fund_slot in ratios_and_fund_slots:
                 column_name = f"fund_{int(fund_slot)}"
                 if column_name in new_fund_entry:
-
+                    new_entry_w_ratio = new_fund_entry[column_name] * ratio
+                    if ratio < 1:
+                        if simulation['positions']['adjust_with_profits_if_loss'] == "True":
+                            new_fund_entry['benefits'] -= (new_fund_entry[column_name]-new_entry_w_ratio)
+                            new_entry_w_ratio = new_fund_entry[column_name]
+                    
                     if simulation['positions']['reinvest_gains'] == "True":
-                        new_fund_entry[column_name] = round(new_fund_entry[column_name] * ratio, 2)
+                        new_fund_entry[column_name] = round(new_entry_w_ratio, 2)
                     else:
-                        if column_name != "benefits":
-                            new_fund_entry['benefits'] += round((new_fund_entry[column_name] * ratio) - new_fund_entry[column_name], 2)
+                        if column_name != "benefits" and ratio >= 1:
+                            new_fund_entry['benefits'] += round(new_entry_w_ratio - new_fund_entry[column_name], 2)
                 else:
                     logger.error(f"Column {column_name} not found in the last entry of the funds_{simulation_name} table.")
             await send_funds_embed(simulator, simulation['discord']['discord_channel_id'], start_ts, end_ts, last_fund_entry, new_fund_entry)

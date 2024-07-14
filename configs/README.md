@@ -46,7 +46,7 @@ Example of a simulation configuration:
         "wallet":
             {
                 "invest_capital": "1000",
-                "adjust_invest_capital_if_loss": "False"
+                "adjust_with_profits_if_loss": "False"
             }
     }
 }
