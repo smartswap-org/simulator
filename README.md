@@ -43,6 +43,12 @@ To begin using the Smartswap Simulator, follow these steps:
 5. **Clone, Configure and Run QTSBE API**: Refer to `https://github.com/simonpotel/QTSBE`
 6. **Run the Simulator**: `python simulator.py`
 
+### Integration on Discord:
+
+<img src="https://github.com/smartswap-org/simulator/blob/c3b00ab4e8ae670ae2f40d1768556a6c26d3bcc0/assets/readme/no_any_and_opened.png">
+<img src="https://github.com/smartswap-org/simulator/blob/c3b00ab4e8ae670ae2f40d1768556a6c26d3bcc0/assets/readme/funds.png">
+<img src="https://github.com/smartswap-org/simulator/blob/c3b00ab4e8ae670ae2f40d1768556a6c26d3bcc0/assets/readme/current_and_closed.png">
+
 ---
 
 ### Support and Contribution:
