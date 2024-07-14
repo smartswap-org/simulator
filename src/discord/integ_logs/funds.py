@@ -32,7 +32,7 @@ async def send_funds_embed(simulator, channel_id, start_ts, end_ts, last_fund_en
         if key in ['start_ts', 'end_ts']:
             embed.add_field(name=key, value=new_funds[key], inline=True)
         else:
-            diff = float(new_funds[key])-float(last_fund_entry[key])
+            diff = round(float(new_funds[key])-float(last_fund_entry[key]), 2) 
             if diff != 0.0: 
                 if diff > 0:
                     embed.add_field(name=key, value=f"{last_fund_entry[key]} -> {new_funds[key]} (+ {diff})", inline=True)

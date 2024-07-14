@@ -107,7 +107,7 @@ async def update_fund_slots(simulator, start_ts, end_ts, simulation_name, simula
             for ratio, fund_slot in ratios_and_fund_slots:
                 column_name = f"fund_{int(fund_slot)}"
                 if column_name in new_fund_entry:
-                    new_fund_entry[column_name] = new_fund_entry[column_name] * ratio
+                    new_fund_entry[column_name] = round(new_fund_entry[column_name] * ratio, 2)
                 else:
                     logger.error(f"Column {column_name} not found in the last entry of the funds_{simulation_name} table.")
             await send_funds_embed(simulator, simulation['discord']['discord_channel_id'], start_ts, end_ts, last_fund_entry, new_fund_entry)
