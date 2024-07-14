@@ -72,12 +72,12 @@ async def insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, colum
     """
     table_name = f"funds_{simulation_name}"
     column_names = ', '.join(columns.keys())
-    placeholders = ', '.join(['?' for _ in columns])  # Use placeholders for dynamic column names
+    placeholders = ', '.join(['?' for _ in columns])  # dynamic columns names (depends on how many fund_slots)
     values = list(columns.values()) + [benefits]
 
     query = f'''
-    INSERT INTO {table_name} (start_ts, end_ts, {column_names}, benefits)
-    VALUES (?, ?, {placeholders}, ?) #OR REPLACE ?????????,
+    INSERT OR REPLACE INTO {table_name} (start_ts, end_ts, {column_names}, benefits)
+    VALUES (?, ?, {placeholders}, ?) 
     '''
 
     try:
