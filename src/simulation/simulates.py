@@ -21,6 +21,7 @@ from src.discord.integ_logs.current_positions import send_current_positions_embe
 from src.discord.integ_logs.position import send_position_embed
 from src.db.tables import create_funds_table
 from src.db.simulation import save_simulation_data    
+from src.db.funds import update_fund_slots
 
 async def simulates(simulator):
     """
@@ -31,7 +32,7 @@ async def simulates(simulator):
     async with aiohttp.ClientSession() as session:
         simulates_config = get_simulations_config()  # get simulations configuration
         for simulation_name, simulation in simulates_config.items():
-            await create_funds_table(simulator.db_manager, simulation_name, simulation['positions']['position_%_invest'])
+            await create_funds_table(simulator.db_manager, simulation_name, simulation)
             start_ts_config = datetime.strptime(simulation["api"]["start_ts"], "%Y-%m-%d")
 
             if simulation["api"]["end_ts"]:
@@ -100,6 +101,7 @@ async def simulates(simulator):
                                                             (simulation_name, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), position_id))
                         simulator.db_manager.db_connection.commit()
                     # send current position embed
+                    await update_fund_slots(simulator.db_manager, start_ts_config.strftime("%Y-%m-%d"), end_ts.strftime("%Y-%m-%d"), simulation_name)
                     await send_current_positions_embed(
                         simulator=simulator,
                         channel_id=simulation['discord']['discord_channel_id'],

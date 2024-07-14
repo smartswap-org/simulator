@@ -49,10 +49,14 @@ async def create_tables(db_manager):
                               PRIMARY KEY (simulation_name, start_ts, end_ts, position_id))''')
     db_manager.db_connection.commit()  # commit the changes
 
-async def create_funds_table(db_manager, simulation_name, position_percent_invest):
-    if int(position_percent_invest) <= 0: 
-        logger.debug(f"Not creating funds_table for {simulation_name}, % invest is too low ({position_percent_invest})")
+async def create_funds_table(db_manager, simulation_name, simulation):
+    
+    position_percent_invest = int(simulation['positions']['position_%_invest'])
+
+    if position_percent_invest <= 0: 
+        logger.debug(f"Not creating funds_table for {simulation_name}, % invest is too low ({simulation['positions']['position_%_invest']})")
         return
+    
     table_name = f"funds_{simulation_name}"
     
     # check if the table already exists
@@ -61,9 +65,9 @@ async def create_funds_table(db_manager, simulation_name, position_percent_inves
         logger.info(f"Table {table_name} already exists.")
         return
     
-    # calculate the number of columns based on position_percent_invest
-    num_columns = 100 // int(position_percent_invest)
-    column_definitions = ', '.join([f'column_{i} REAL' for i in range(1, num_columns + 1)])
+    # calculate the number of columns based on position_%_invest
+    num_columns = 100 // position_percent_invest
+    column_definitions = ', '.join([f'fund_{i} REAL' for i in range(1, num_columns + 1)])
     
     # create the table with the calculated columns and an additional 'benefits' column
     create_table_sql = f'''CREATE TABLE {table_name} (
@@ -72,9 +76,25 @@ async def create_funds_table(db_manager, simulation_name, position_percent_inves
                               {column_definitions},
                               benefits REAL,
                               PRIMARY KEY (start_ts, end_ts))'''
+    
     try:
         db_manager.db_cursor.execute(create_table_sql)
         db_manager.db_connection.commit()
         logger.info(f"Table {table_name} created successfully.")
+        
+        start_ts = simulation['api']['start_ts']
+        end_ts = simulation['api']['start_ts']
+        invest_capital = float(simulation['wallet']['invest_capital'])
+        
+        fund_value = invest_capital / (100 / position_percent_invest)
+        fund_values = ', '.join([str(fund_value) for _ in range(num_columns)])
+        
+        insert_data_sql = f'''INSERT INTO {table_name} (start_ts, end_ts, {', '.join([f'fund_{i}' for i in range(1, num_columns + 1)])}, benefits)
+                              VALUES (?, ?, {fund_values}, ?)'''
+        
+        db_manager.db_cursor.execute(insert_data_sql, (start_ts, end_ts, 0))
+        db_manager.db_connection.commit()
+        logger.info(f"Initial data inserted into {table_name}.")
+        
     except sqlite3.Error as e:
-        logger.error(f"An error occurred while creating table {table_name}: {e}")
+        logger.error(f"An error occurred while creating or inserting data into table {table_name}: {e}")

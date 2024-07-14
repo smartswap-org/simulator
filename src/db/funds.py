@@ -11,6 +11,7 @@
 
 import sqlite3
 from loguru import logger
+from src.db.positions import get_ratios_and_fund_slots_by_sell_date
 
 async def get_fund_rows_by_timestamp(db_manager, simulation_name, start_ts, end_ts):
     """
@@ -39,3 +40,77 @@ async def get_fund_rows_by_timestamp(db_manager, simulation_name, start_ts, end_
     except sqlite3.Error as e:
         logger.error(f"An error occurred while retrieving rows from fund table: {e}")
         return None
+
+async def get_last_fund_entry(db_manager, simulation_name):
+    """
+    Retrieve the last entry in the funds_{simulation_name} table based on the most recent end_ts,
+    and return it as a dictionary.
+    """
+    table_name = f"funds_{simulation_name}"
+    try:
+        query = f'''
+        SELECT * FROM {table_name}
+        ORDER BY end_ts DESC
+        LIMIT 1
+        '''
+        db_manager.db_cursor.execute(query)
+        row = db_manager.db_cursor.fetchone()
+        if row is None:
+            return None
+
+        col_names = [description[0] for description in db_manager.db_cursor.description]
+        result = dict(zip(col_names, row))
+        return result
+
+    except sqlite3.Error as e:
+        logger.error(f"An error occurred while retrieving the last entry from {table_name}: {e}")
+        return None
+
+async def insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, columns, benefits):
+    """
+    Insert a new entry into the funds_{simulation_name} table with start_ts, end_ts, dynamic columns, and benefits.
+    """
+    table_name = f"funds_{simulation_name}"
+    column_names = ', '.join(columns.keys())
+    placeholders = ', '.join(['?' for _ in columns])  # Use placeholders for dynamic column names
+    values = list(columns.values()) + [benefits]
+
+    query = f'''
+    INSERT INTO {table_name} (start_ts, end_ts, {column_names}, benefits)
+    VALUES (?, ?, {placeholders}, ?)
+    '''
+
+    try:
+        db_manager.db_cursor.execute(query, [start_ts, end_ts] + values)
+        db_manager.db_connection.commit()
+        logger.info(f"Entry inserted into {table_name} successfully.")
+    except sqlite3.Error as e:
+        logger.error(f"An error occurred while inserting an entry into {table_name}: {e}")
+
+async def update_fund_slots(db_manager, start_ts, end_ts, simulation_name):
+    """
+    Update the fund slots in the funds_{simulation_name} table with new values based on ratios.
+    """
+    try:
+        ratios_and_fund_slots = await get_ratios_and_fund_slots_by_sell_date(
+            db_manager=db_manager, 
+            sell_date=end_ts
+        ) 
+        last_fund_entry = await get_last_fund_entry(db_manager, simulation_name)
+        if last_fund_entry is None:
+            logger.error(f"No entries found in the funds_{simulation_name} table. \n\n last_fund_entry = {last_fund_entry}, end_ts= {end_ts}")
+            return
+
+        new_columns = {}
+        for ratio, fund_slot in ratios_and_fund_slots:
+            column_name = f"fund_{int(fund_slot)}"
+            if column_name in last_fund_entry:
+                new_columns[column_name] = last_fund_entry[column_name] * ratio
+            else:
+                logger.error(f"Column {column_name} not found in the last entry of the funds_{simulation_name} table.")
+
+        await insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, new_columns, benefits=0.0)
+        logger.info(f"Updated fund slots for simulation {simulation_name} from {start_ts} to {end_ts}.")
+
+    except sqlite3.Error as e:
+        logger.error(f"An error occurred while updating fund slots: {e}")

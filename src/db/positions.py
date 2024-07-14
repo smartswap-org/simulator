@@ -147,3 +147,20 @@ async def save_position(db_manager, pair, buy_date, buy_price, sell_date, sell_p
     except sqlite3.Error as e:
         logger.error(f"An error occurred while saving position: {e}")
         return None  # return None if an error occurred
+
+async def get_ratios_and_fund_slots_by_sell_date(db_manager, sell_date):
+    """
+    Retrieve the ratios and fund_slots of positions with the specified sell_date.
+    """
+    try:
+        query = '''
+        SELECT ratio, fund_slot
+        FROM positions
+        WHERE sell_date = ?
+        '''
+        db_manager.db_cursor.execute(query, (sell_date,))
+        results = db_manager.db_cursor.fetchall()
+        return results
+    except sqlite3.Error as e:
+        logger.error(f"An error occurred while retrieving ratios and fund_slots: {e}")
+        return []
