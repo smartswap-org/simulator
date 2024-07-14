@@ -77,7 +77,7 @@ async def insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, colum
 
     query = f'''
     INSERT INTO {table_name} (start_ts, end_ts, {column_names}, benefits)
-    VALUES (?, ?, {placeholders}, ?)
+    VALUES (?, ?, {placeholders}, ?) #OR REPLACE ?????????,
     '''
 
     try:
@@ -101,15 +101,14 @@ async def update_fund_slots(db_manager, start_ts, end_ts, simulation_name):
             logger.error(f"No entries found in the funds_{simulation_name} table. \n\n last_fund_entry = {last_fund_entry}, end_ts= {end_ts}")
             return
 
-        new_columns = {}
         for ratio, fund_slot in ratios_and_fund_slots:
             column_name = f"fund_{int(fund_slot)}"
             if column_name in last_fund_entry:
-                new_columns[column_name] = last_fund_entry[column_name] * ratio
+                last_fund_entry[column_name] = last_fund_entry[column_name] * ratio
             else:
                 logger.error(f"Column {column_name} not found in the last entry of the funds_{simulation_name} table.")
 
-        await insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, new_columns, benefits=0.0)
+        await insert_fund_entry(db_manager, simulation_name, start_ts, end_ts, last_fund_entry, benefits=0.0)
         logger.info(f"Updated fund slots for simulation {simulation_name} from {start_ts} to {end_ts}.")
 
     except sqlite3.Error as e:
