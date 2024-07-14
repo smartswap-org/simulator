@@ -19,24 +19,28 @@ async def send_funds_embed(simulator, channel_id, start_ts, end_ts, last_fund_en
     if channel is None:
         return
 
-    if isinstance(end_ts, str):
-        end_ts_datetime = datetime.strptime(end_ts, "%Y-%m-%d")
-    else:
-        end_ts_datetime = end_ts
-
     title_line = f"<:tetherusdt:1262038840584044624> Funds"
     
     description_lines = []
-    description_lines.append(json.dumps(last_fund_entry))
-    description_lines.append(json.dumps(new_funds))
 
     embed = discord.Embed(
         title=title_line,
         description="\n".join(description_lines),
         color=0xACBFA4
     )
+    for key in new_funds.keys():
+        if key in ['start_ts', 'end_ts']:
+            embed.add_field(name=key, value=new_funds[key], inline=True)
+        else:
+            diff = float(new_funds[key])-float(last_fund_entry[key])
+            if diff != 0.0: 
+                if diff > 0:
+                    embed.add_field(name=key, value=f"{last_fund_entry[key]} -> {new_funds[key]} (+ {diff})", inline=True)
+                else:
+                    embed.add_field(name=key, value=f"{last_fund_entry[key]} -> {new_funds[key]} ({diff})", inline=True)
+            else:
+                embed.add_field(name=key, value=new_funds[key], inline=True)
 
-    #embed.set_author(name="Smartswap", icon_url="https://avatars.githubusercontent.com/u/171923264?s=200&v=4")
     embed.set_footer(text=f"Simulation from {start_ts} to {end_ts}")
 
     # Check for duplicate messages in the last 10 messages
