@@ -4,3 +4,4 @@ simulations.json
 simulator.db
 logs/
 strategies/*
+.DS_Store
