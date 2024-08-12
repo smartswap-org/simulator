@@ -3,4 +3,4 @@ discord_bot.json
 simulations.json
 simulator.db
 logs/
-api/strategies/*
+strategies/*
