@@ -1,16 +1,3 @@
-# =============================================================================
-# Smartswap Simulator
-# =============================================================================
-# A module of Smartswap that simulates trading strategies in real-time combined
-# with capital management strategies.
-#
-# Repository: https://github.com/smartswap-org/simulator
-# Author: Simon
-# =============================================================================
-# Description of this file:
-# This file is the main file of the simulator, you can run simulator.py using some arguments:
-# -debug : this parameter will log the debug logs in the folder 'logs/'
-
 import discord
 import socket
 import sqlite3
@@ -21,6 +8,7 @@ from discord import Activity, ActivityType
 from datetime import datetime
 from loguru import logger
 from src.discord.configs import get_discord_config
+from src.db.manager import DatabaseManager 
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')
@@ -39,9 +27,16 @@ log_file = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
 logger.add(log_file, rotation="00:00", retention="7 days", level="DEBUG" if args.debug else "INFO")
 
 class Simulator:
-    def __init__(self, discord_bot, bot_config):
+    def __init__(self, discord_bot, bot_config, db_path='simulator.db'):
         self.discord_bot = discord_bot  # Discord bot instance
-        self.bot_config = bot_config  # configuration for the bot, available in configs/discord_bot.json
+        self.bot_config = bot_config  # Configuration for the bot, available in configs/discord_bot.json
+        self.db_manager = DatabaseManager(db_path)  # Initialize DatabaseManager with the database path
+
+    def close(self):
+        """
+        Close the database connection when the simulator stops.
+        """
+        self.db_manager.close()  # Close the database connection
 
     #@tasks.loop(seconds=1)
     #async def simulates_loop(self):
@@ -67,6 +62,12 @@ class MyClient(discord.Client):
         #await simulator.start_simulation()  # start the simulation
         await self.change_presence(activity=Activity(type=ActivityType.custom, name=" ", state="🚀 working"))  # set bot presence
 
-discord_bot = MyClient(intents=discord.Intents.all()) # create the Discord bot instance
-simulator = Simulator(discord_bot, get_discord_config())  # create the simulator instance
+discord_bot = MyClient(intents=discord.Intents.all())  # create the Discord bot instance
+simulator = Simulator(discord_bot, get_discord_config())  # create the simulator instance with a database connection
 discord_bot.run(simulator.bot_config["token"])  # run the bot with the token from the config
+
+# ensure the database connection is closed when the bot stops
+try:
+    discord_bot.run(simulator.bot_config["token"])
+finally:
+    simulator.db_manager.close()
