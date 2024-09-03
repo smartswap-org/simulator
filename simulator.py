@@ -11,6 +11,7 @@ from src.discord.configs import get_discord_config
 from src.db.manager import DatabaseManager 
 from src.simulation.simulates import simulates
 from src.discord.integ_logs.log import log 
+from src.db.positions import Positions
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')
@@ -33,6 +34,7 @@ class Simulator:
         self.discord_bot = discord_bot  # Discord bot instance
         self.bot_config = bot_config  # Configuration for the bot, available in configs/discord_bot.json
         self.db_manager = DatabaseManager(db_path)  # Initialize DatabaseManager with the database path
+        self.positions = Positions(self.db_manager)
 
     def close(self):
         """
