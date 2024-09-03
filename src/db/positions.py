@@ -106,3 +106,25 @@ class Positions:
         self.db_manager.db_cursor.execute(query, 
             (sell_date, sell_price, sell_index, sell_signals, position_duration, ratio, position_id))
         self.db_manager.db_connection.commit()
+    def get_most_recent_date(self, simulation_name):
+        """
+        Get the most recent date (either sell_date or buy_date) for a given simulation_name.
+
+        simulation_name: The name of the simulation.
+
+        Returns:
+            The most recent date as a string in 'YYYY-MM-DD' format.
+        """
+        query = '''
+        SELECT MAX(
+            CASE 
+                WHEN sell_date IS NOT NULL THEN sell_date
+                ELSE buy_date
+            END
+        ) as most_recent_date
+        FROM positions
+        WHERE simulation_name = ?
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name])
+        result = self.db_manager.db_cursor.fetchone()
+        return result[0] if result else None
