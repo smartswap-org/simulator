@@ -9,6 +9,8 @@ from datetime import datetime
 from loguru import logger
 from src.discord.configs import get_discord_config
 from src.db.manager import DatabaseManager 
+from src.simulation.simulates import simulates
+from src.discord.integ_logs.log import log 
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')
@@ -38,20 +40,20 @@ class Simulator:
         """
         self.db_manager.close()  # Close the database connection
 
-    #@tasks.loop(seconds=1)
-    #async def simulates_loop(self):
-    #    """
-    #    Loop to run the simulation periodically
-    #    """
-    #    await simulates(self)  # call the simulates function in a loop
+    @tasks.loop(seconds=1)
+    async def simulates_loop(self):
+        """
+        Loop to run the simulation periodically
+        """
+        await simulates(self)  # call the simulates function in a loop
 
-    #async def start_simulation(self):
-    #    """
-    #    Start the simulation and log the start message to Discord
-    #    """
-    #    await log(self, self.bot_config["logs_channel_id"], "🚀 Started", 
-    #                   f"Simulator has been started on host: {socket.gethostname()}")  
-    #    self.simulates_loop.start()  # start the simulation loop
+    async def start_simulation(self):
+        """
+        Start the simulation and log the start message to Discord
+        """
+        await log(self, self.bot_config["logs_channel_id"], "🚀 Started", 
+                       f"Simulator has been started on host: {socket.gethostname()}")  
+        self.simulates_loop.start()  # start the simulation loop
 
 class MyClient(discord.Client):
     async def on_ready(self):
@@ -59,7 +61,7 @@ class MyClient(discord.Client):
         Event handler for when the bot is ready
         """
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})') 
-        #await simulator.start_simulation()  # start the simulation
+        await simulator.start_simulation()  # start the simulation
         await self.change_presence(activity=Activity(type=ActivityType.custom, name=" ", state="🚀 working"))  # set bot presence
 
 discord_bot = MyClient(intents=discord.Intents.all())  # create the Discord bot instance
