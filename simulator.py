@@ -20,10 +20,7 @@ from discord.ext import tasks
 from discord import Activity, ActivityType
 from datetime import datetime
 from loguru import logger
-from src.db.manager import DatabaseManager
-from src.discord.integ_logs.log import log
 from src.discord.configs import get_discord_config
-from src.simulation.simulates import simulates 
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')
@@ -45,36 +42,21 @@ class Simulator:
     def __init__(self, discord_bot, bot_config):
         self.discord_bot = discord_bot  # Discord bot instance
         self.bot_config = bot_config  # configuration for the bot, available in configs/discord_bot.json
-        self.db_manager = DatabaseManager()  # SQLite3 manager (creates tables, database, etc.)
 
-    def update_position_sell_info(self, simulation_name, start_ts, end_ts, sell_date, sell_price):
-        """
-        Update the sell information for a position in the database
-        """
-        try:
-            # update the simulation position in the database
-            self.db_manager.db_cursor.execute('''UPDATE simulation_positions SET sell_date = ?, sell_price = ? 
-                                      WHERE simulation_name = ? AND start_ts = ? AND end_ts = ?''', 
-                                   (sell_date, sell_price, simulation_name, start_ts, end_ts))
-            self.db_manager.db_connection.commit()  # Ccmmit the changes to the database
-            logger.debug(f"Position updated successfully: {simulation_name}, {start_ts} to {end_ts}")  # log success
-        except sqlite3.Error as e:
-            logger.error(f"An error occurred while updating position: {e}")  # log error if any
+    #@tasks.loop(seconds=1)
+    #async def simulates_loop(self):
+    #    """
+    #    Loop to run the simulation periodically
+    #    """
+    #    await simulates(self)  # call the simulates function in a loop
 
-    @tasks.loop(seconds=1)
-    async def simulates_loop(self):
-        """
-        Loop to run the simulation periodically
-        """
-        await simulates(self)  # call the simulates function in a loop
-
-    async def start_simulation(self):
-        """
-        Start the simulation and log the start message to Discord
-        """
-        await log(self, self.bot_config["logs_channel_id"], "🚀 Started", 
-                       f"Simulator has been started on host: {socket.gethostname()}")  
-        self.simulates_loop.start()  # start the simulation loop
+    #async def start_simulation(self):
+    #    """
+    #    Start the simulation and log the start message to Discord
+    #    """
+    #    await log(self, self.bot_config["logs_channel_id"], "🚀 Started", 
+    #                   f"Simulator has been started on host: {socket.gethostname()}")  
+    #    self.simulates_loop.start()  # start the simulation loop
 
 class MyClient(discord.Client):
     async def on_ready(self):
@@ -82,7 +64,7 @@ class MyClient(discord.Client):
         Event handler for when the bot is ready
         """
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})') 
-        await simulator.start_simulation()  # start the simulation
+        #await simulator.start_simulation()  # start the simulation
         await self.change_presence(activity=Activity(type=ActivityType.custom, name=" ", state="🚀 working"))  # set bot presence
 
 discord_bot = MyClient(intents=discord.Intents.all()) # create the Discord bot instance

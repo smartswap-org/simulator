@@ -11,8 +11,6 @@
 # =============================================================================
 
 import sqlite3
-import asyncio
-from src.db.tables import create_tables
 
 class DatabaseManager:
     def __init__(self, db_path='simulator.db'):
@@ -23,7 +21,6 @@ class DatabaseManager:
         """
         self.db_connection = sqlite3.connect(db_path)  # connect to the SQLite database
         self.db_cursor = self.db_connection.cursor()  # create a cursor object to interact with the database
-        asyncio.run(create_tables(self))  # create tables if they don't exist
 
     def close(self):
         """
