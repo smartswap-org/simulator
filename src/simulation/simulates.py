@@ -9,6 +9,11 @@
 # by fetching data from APIs, processing positions, and saving them into the database.
 # =============================================================================
 
+import aiohttp
+from src.discord.configs import get_simulations_config
 
 async def simulates(simulator):
-   return 
+    #async with aiohttp.ClientSession() as session:
+    #    simulates_config = get_simulations_config()  # get simulations configuration
+    #    for simulation_name, simulation in simulates_config.items():
+    return 
