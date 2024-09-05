@@ -22,7 +22,7 @@ async def create_tables(db_manager):
                               position_duration INTEGER,
                               ratio REAL,
                               fund_slot REAL,
-                              buy_signals TEXT,
-                              sell_signals TEXT)''')
+                              buy_signal INTEGER,
+                              sell_signal INTEGER)''')
     
     db_manager.db_connection.commit()  # commit the changes

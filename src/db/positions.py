@@ -46,7 +46,7 @@ class Positions:
         self.db_manager.db_cursor.execute(query, [simulation_name])
         return self.db_manager.db_cursor.fetchall()
 
-    def create_position(self, simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signals):
+    def create_position(self, simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal):
         """
         Create a new position for a specific simulation_name.
 
@@ -56,7 +56,7 @@ class Positions:
         buy_price: The price at which the asset was bought.
         buy_index: The index corresponding to the buy signal.
         fund_slot: The portion of the fund allocated to this position.
-        buy_signals: Any signals associated with the buy decision.
+        buy_signal: Any signals associated with the buy decision.
 
         Returns:
             The ID of the newly created position.
@@ -64,14 +64,14 @@ class Positions:
         buy_price = round(buy_price, 3)
         fund_slot = round(fund_slot, 3)
 
-        query = '''INSERT INTO positions (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signals)
+        query = '''INSERT INTO positions (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal)
                    VALUES (?, ?, ?, ?, ?, ?, ?)'''
         self.db_manager.db_cursor.execute(query, 
-            (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signals))
+            (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal))
         self.db_manager.db_connection.commit()
         return self.db_manager.db_cursor.lastrowid
 
-    def close_position(self, position_id, sell_date, sell_price, sell_index, sell_signals):
+    def close_position(self, position_id, sell_date, sell_price, sell_index, sell_signal):
         """
         Close (sell) an open position by updating it with the sell information.
 
@@ -79,7 +79,7 @@ class Positions:
         sell_date: The sell date in 'YYYY-MM-DD' format.
         sell_price: The price at which the asset was sold.
         sell_index: The index corresponding to the sell signal.
-        sell_signals: Any signals associated with the sell decision.
+        sell_signal: Any signals associated with the sell decision.
 
         Returns:
             None
@@ -105,11 +105,11 @@ class Positions:
 
         # Update the position with the sell information
         query = '''UPDATE positions
-                   SET sell_date = ?, sell_price = ?, sell_index = ?, sell_signals = ?, 
+                   SET sell_date = ?, sell_price = ?, sell_index = ?, sell_signal = ?, 
                        position_duration = ?, ratio = ?
                    WHERE id = ?'''
         self.db_manager.db_cursor.execute(query, 
-            (sell_date, sell_price, sell_index, sell_signals, position_duration, ratio, position_id))
+            (sell_date, sell_price, sell_index, sell_signal, position_duration, ratio, position_id))
         self.db_manager.db_connection.commit()
 
     def get_most_recent_date(self, simulation_name):
@@ -142,7 +142,7 @@ class Positions:
         pair_name: The trading pair (e.g., 'BTC/USD').
 
         Returns:
-            List of open positions for the specified pair.
+            List of open positions for the specified pair as dictionaries.
         """
         query = '''
         SELECT * FROM positions 
@@ -151,7 +151,10 @@ class Positions:
         AND sell_index IS NULL
         '''
         self.db_manager.db_cursor.execute(query, [simulation_name, pair_name])
-        return self.db_manager.db_cursor.fetchall()
+        columns = [column[0] for column in self.db_manager.db_cursor.description]
+        rows = self.db_manager.db_cursor.fetchall()
+        return [dict(zip(columns, row)) for row in rows]
+
     def get_max_index_for_pair(self, simulation_name, pair_name):
         """
         Get the maximum index (either buy_index or sell_index) for a specific pair 
