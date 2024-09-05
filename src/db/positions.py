@@ -128,3 +128,53 @@ class Positions:
         self.db_manager.db_cursor.execute(query, [simulation_name])
         result = self.db_manager.db_cursor.fetchone()
         return result[0] if result else None
+    def get_open_positions_by_pair(self, simulation_name, pair_name):
+        """
+        Get all open positions for a specific simulation_name and trading pair.
+
+        simulation_name: The name of the simulation.
+        pair_name: The trading pair (e.g., 'BTC/USD').
+
+        Returns:
+            List of open positions for the specified pair.
+        """
+        query = '''
+        SELECT * FROM positions 
+        WHERE simulation_name = ? 
+        AND pair = ? 
+        AND sell_index IS NULL
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, pair_name])
+        return self.db_manager.db_cursor.fetchall()
+    def get_max_index_for_pair(self, simulation_name, pair_name):
+        """
+        Get the maximum index (either buy_index or sell_index) for a specific pair 
+        in a given simulation, considering all current and past positions.
+
+        simulation_name: The name of the simulation.
+        pair_name: The trading pair (e.g., 'BTC/USD').
+
+        Returns:
+            The maximum index value among all buy_index and sell_index for the specified pair.
+            If no positions exist, returns None.
+        """
+        query = '''
+        SELECT MAX(
+            CASE 
+                WHEN buy_index IS NOT NULL AND sell_index IS NOT NULL THEN 
+                    CASE 
+                        WHEN buy_index > sell_index THEN buy_index
+                        ELSE sell_index 
+                    END
+                WHEN buy_index IS NOT NULL THEN buy_index
+                WHEN sell_index IS NOT NULL THEN sell_index
+                ELSE 0
+            END
+        ) as max_index
+        FROM positions 
+        WHERE simulation_name = ? 
+        AND pair = ?
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, pair_name])
+        result = self.db_manager.db_cursor.fetchone()
+        return result[0] if result else None
