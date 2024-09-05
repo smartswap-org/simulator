@@ -61,6 +61,9 @@ class Positions:
         Returns:
             The ID of the newly created position.
         """
+        buy_price = round(buy_price, 3)
+        fund_slot = round(fund_slot, 3)
+
         query = '''INSERT INTO positions (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signals)
                    VALUES (?, ?, ?, ?, ?, ?, ?)'''
         self.db_manager.db_cursor.execute(query, 
@@ -96,7 +99,9 @@ class Positions:
         position_duration = (sell_date_obj - buy_date).days
 
         # Calculate the profit/loss ratio
-        ratio = sell_price / buy_price
+        ratio = round(sell_price / buy_price, 3)  # Round ratio to 3 decimal places
+
+        sell_price = round(sell_price, 3)
 
         # Update the position with the sell information
         query = '''UPDATE positions
@@ -106,6 +111,7 @@ class Positions:
         self.db_manager.db_cursor.execute(query, 
             (sell_date, sell_price, sell_index, sell_signals, position_duration, ratio, position_id))
         self.db_manager.db_connection.commit()
+
     def get_most_recent_date(self, simulation_name):
         """
         Get the most recent date (either sell_date or buy_date) for a given simulation_name.
