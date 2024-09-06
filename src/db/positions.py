@@ -71,20 +71,31 @@ class Positions:
         self.db_manager.db_connection.commit()
         return self.db_manager.db_cursor.lastrowid
 
-    def get_free_fund_slots(self, simulation_name, pair_name, max_slots):
+    def get_free_fund_slots(self, simulation_name, max_slots):
         """
-        Get all free fund slots for a specific pair.
+        Get all free fund slots for a specific simulation_name.
 
         simulation_name: The name of the simulation.
-        pair_name: The trading pair (e.g., 'BTC/USD').
         max_slots: Maximum number of fund slots allowed.
 
         Returns:
             List of available fund slots.
         """
-        used_slots = {pos['fund_slot'] for pos in self.get_open_positions_by_pair(simulation_name, pair_name)}
+        used_slots = self.get_used_fund_slots(simulation_name)
         return [slot for slot in range(1, max_slots + 1) if slot not in used_slots]
+    def get_used_fund_slots(self, simulation_name):
+        """
+        Get all fund slots that are currently in use for a specific simulation_name.
 
+        simulation_name: The name of the simulation.
+
+        Returns:
+            Set of fund slots that are currently used.
+        """
+        query = "SELECT DISTINCT fund_slot FROM positions WHERE simulation_name = ? AND sell_index IS NULL"
+        self.db_manager.db_cursor.execute(query, [simulation_name])
+        used_slots = self.db_manager.db_cursor.fetchall()
+        return {slot[0] for slot in used_slots}
     def close_position(self, position_id, sell_date, sell_price, sell_index, sell_signal):
         """
         Close (sell) an open position by updating it with the sell information.

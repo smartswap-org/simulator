@@ -73,24 +73,42 @@ async def simulates(simulator):
 
             most_recent_date_str = simulator.positions.get_most_recent_date(simulation_name)
             most_recent_date = str_to_datetime(most_recent_date_str)  # Convertir en datetime
+
+            start_ts = simulation['api'].get('start_ts')
+            end_ts = simulation['api'].get('end_ts')
+
+            start_date = str_to_datetime(start_ts) if start_ts else None
+            end_date = str_to_datetime(end_ts) if end_ts else None
+
+            if start_date and (most_recent_date is None or most_recent_date < start_date):
+                most_recent_date = start_date
+                logger.info(f"Adjusting start date to {start_date.strftime('%Y-%m-%d')}")
+
             logger.info(f"Most recent date for {simulation_name} is {most_recent_date_str}")
 
             all_dates = extract_all_dates(data)
             filtered_dates = [date for date in all_dates if most_recent_date is None or date > most_recent_date - timedelta(days=1)]
+            if end_date:
+                filtered_dates = [date for date in filtered_dates if date <= end_date]
 
             closed_positions_ids = set()
-            start_time = asyncio.get_event_loop().time() 
+            start_time = asyncio.get_event_loop().time()
 
             for target_date in filtered_dates:
                 current_time = asyncio.get_event_loop().time()
                 elapsed_time = current_time - start_time
 
-                if elapsed_time >= 7:  
-                    await asyncio.sleep(1)  
-                    start_time = asyncio.get_event_loop().time()  
+                if elapsed_time >= 10:
+                    logger.debug('HEARTBEAT AVOID / Short pause due to elapsed_time')
+                    await asyncio.sleep(1)
+                    start_time = asyncio.get_event_loop().time()
+
+                if end_date and target_date > end_date:
+                    logger.info(f"Stopping simulation as target date {target_date.strftime('%Y-%m-%d')} exceeds end date {end_date.strftime('%Y-%m-%d')}")
+                    break
 
                 logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d')}")
-                
+
                 for pair_name, pair_data in zip(pairs_list, data):
                     index = get_index_for_date(pair_data, target_date)
                     if index is None:
@@ -117,13 +135,13 @@ async def simulates(simulator):
                                 logger.info(f"Closed position {pos['id']} for {pair_name} on {sell_date} at price {sell_price}")
                                 await send_close_position_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
                     
-                    free_fund_slots = simulator.positions.get_free_fund_slots(simulation_name, pair_name, max_fund_slots)
                     if free_fund_slots:
                         buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, index, indicators)
                         if buy_signal > 0:
                             if not free_fund_slots:
                                 break
-                            fund_slot = free_fund_slots.pop(0)
+                            fund_slot = free_fund_slots[0]  
+                            free_fund_slots.pop(0)  
                             buy_date = pair_data['data'][index][0]
                             buy_price = prices[index]
                             position_id = simulator.positions.create_position(
@@ -131,6 +149,5 @@ async def simulates(simulator):
                             )
                             logger.info(f"Opened position {position_id} for {pair_name} on {buy_date} at price {buy_price} with fund slot {fund_slot}")
                             await send_open_position_embed(simulator, simulation['discord']['discord_channel_id'], position_id)
-                
 
     logger.info("Simulation completed.")
