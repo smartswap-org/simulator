@@ -29,7 +29,7 @@ async def fetch_ohlcv_from_api(simulation):
 
         async with aiohttp.ClientSession() as session:
             for pair in pairs:
-                url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?details=True"
+                url = f"http://127.0.0.1:5000/QTSBE/{pair}/default?details=True" # {simulation['api']['strategy']}
 
                 async with session.get(url) as response:
                     if response.status == 200:

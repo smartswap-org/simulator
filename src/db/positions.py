@@ -65,11 +65,25 @@ class Positions:
         fund_slot = round(fund_slot, 3)
 
         query = '''INSERT INTO positions (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)'''
+                VALUES (?, ?, ?, ?, ?, ?, ?)'''
         self.db_manager.db_cursor.execute(query, 
             (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal))
         self.db_manager.db_connection.commit()
         return self.db_manager.db_cursor.lastrowid
+
+    def get_free_fund_slots(self, simulation_name, pair_name, max_slots):
+        """
+        Get all free fund slots for a specific pair.
+
+        simulation_name: The name of the simulation.
+        pair_name: The trading pair (e.g., 'BTC/USD').
+        max_slots: Maximum number of fund slots allowed.
+
+        Returns:
+            List of available fund slots.
+        """
+        used_slots = {pos['fund_slot'] for pos in self.get_open_positions_by_pair(simulation_name, pair_name)}
+        return [slot for slot in range(1, max_slots + 1) if slot not in used_slots]
 
     def close_position(self, position_id, sell_date, sell_price, sell_index, sell_signal):
         """
@@ -105,11 +119,11 @@ class Positions:
 
         # Update the position with the sell information
         query = '''UPDATE positions
-                   SET sell_date = ?, sell_price = ?, sell_index = ?, sell_signal = ?, 
-                       position_duration = ?, ratio = ?
-                   WHERE id = ?'''
+                    SET sell_date = ?, sell_price = ?, sell_index = ?, sell_signal = ?, 
+                    position_duration = ?, ratio = ?
+                WHERE id = ?'''
         self.db_manager.db_cursor.execute(query, 
-            (sell_date, sell_price, sell_index, sell_signal, position_duration, ratio, position_id))
+        (sell_date, sell_price, sell_index, sell_signal, position_duration, ratio, position_id))
         self.db_manager.db_connection.commit()
 
     def get_most_recent_date(self, simulation_name):
