@@ -3,7 +3,6 @@ import importlib
 import aiohttp
 from src.discord.configs import get_simulations_config
 from src.api.fetch import fetch_ohlcv_from_api
-from QTSBE.api.algo.indicators.rsi import get_RSI
 from loguru import logger
 from src.discord.integ_logs.open_position import send_open_position_embed
 from src.discord.integ_logs.close_position import send_close_position_embed
