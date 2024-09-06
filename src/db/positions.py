@@ -229,3 +229,28 @@ class Positions:
             columns = [column[0] for column in self.db_manager.db_cursor.description]
             return dict(zip(columns, row))
         return None
+    def get_ratios_for_fund_slot(self, simulation_name, fund_slot):
+        """
+        Get the ratio for each position containing the given fund_slot 
+        in a specific simulation_name.
+
+        simulation_name: The name of the simulation.
+        fund_slot: The fund slot for which to retrieve ratios.
+
+        Returns:
+            List of ratios for the positions containing the specified fund_slot.
+        """
+        query = '''
+        SELECT ratio 
+        FROM positions 
+        WHERE simulation_name = ? 
+        AND fund_slot = ? 
+        AND sell_index IS NOT NULL
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, fund_slot])
+        rows = self.db_manager.db_cursor.fetchall()
+        
+        ratios = [row[0] for row in rows]
+        
+        return ratios
+    

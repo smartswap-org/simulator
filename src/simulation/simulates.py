@@ -6,6 +6,7 @@ from src.api.fetch import fetch_ohlcv_from_api
 from loguru import logger
 from src.discord.integ_logs.open_position import send_open_position_embed
 from src.discord.integ_logs.close_position import send_close_position_embed
+from src.discord.integ_logs.fund_slot_summary import send_fund_slot_summary_embed
 from datetime import datetime, timedelta
 import asyncio
 
@@ -138,7 +139,7 @@ async def simulates(simulator):
                                 closed_positions_ids.add(pos['id'])
                                 logger.info(f"Closed position {pos['id']} for {pair_name} on {sell_date} at price {sell_price}")
                                 await send_close_position_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
-                    
+                                await send_fund_slot_summary_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
                     free_fund_slots = simulator.positions.get_free_fund_slots(simulation_name, max_fund_slots)
                     if free_fund_slots:
                         buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, index, indicators)
@@ -151,5 +152,5 @@ async def simulates(simulator):
                             )
                             logger.info(f"Opened position {position_id} for {pair_name} on {buy_date} at price {buy_price} with fund slot {fund_slot}")
                             await send_open_position_embed(simulator, simulation['discord']['discord_channel_id'], position_id)
-
     logger.info("Simulation completed.")
+    logger.info("")
