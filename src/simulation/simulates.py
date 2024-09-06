@@ -81,9 +81,6 @@ async def simulates(simulator):
                 free_fund_slots = simulator.positions.get_free_fund_slots(simulation_name, pair_name, max_fund_slots)
                 if free_fund_slots:
                     for i in range(start_index, len(prices)):
-                        if rsi[i] is None:
-                            continue
-
                         buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, i, indicators)
                         if buy_signal > 0:
                             if not free_fund_slots:
