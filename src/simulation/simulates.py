@@ -135,6 +135,7 @@ async def simulates(simulator):
                                 logger.info(f"Closed position {pos['id']} for {pair_name} on {sell_date} at price {sell_price}")
                                 await send_close_position_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
                     
+                    free_fund_slots = simulator.positions.get_free_fund_slots(simulation_name, max_fund_slots)
                     if free_fund_slots:
                         buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, index, indicators)
                         if buy_signal > 0:
