@@ -1,23 +1,12 @@
-# =============================================================================
-# Smartswap Simulator
-# =============================================================================
-# Repository: https://github.com/smartswap-org/simulator
-# Author of this code: Simon
-# =============================================================================
-# Description of this file:
-# This file contains the simulates function which handles the simulation process
-# by fetching data from APIs, processing positions, and saving them into the database.
-# =============================================================================
-
 import os 
 import importlib
 import aiohttp
 from src.discord.configs import get_simulations_config
 from src.api.fetch import fetch_ohlcv_from_api
-from pathlib import Path
 from QTSBE.api.algo.indicators.rsi import get_RSI
 from loguru import logger
-
+from src.discord.integ_logs.open_position import send_open_position_embed
+from src.discord.integ_logs.close_position import send_close_position_embed
 
 def import_signals_and_indicators(strategies_folder="strategies"):
     strategies = {}
@@ -92,6 +81,7 @@ async def simulates(simulator):
                             )
                             logger.info(f"Opened position {position_id} for {pair_name} on {buy_date} at price {buy_price}")
                             open_positions = simulator.positions.get_open_positions_by_pair(simulation_name, pair_name) 
+                            await send_open_position_embed(simulator, simulation['discord']['discord_channel_id'], position_id)
                     else:
                         open_position = open_positions[0]  # Assuming only one open position
                         sell_signal = strategies[simulation['api']['strategy']]['sell_signal'](open_position, prices, i, indicators)
@@ -105,5 +95,6 @@ async def simulates(simulator):
                             )
                             logger.info(f"Closed position {open_position['id']} for {pair_name} on {sell_date} at price {sell_price}")
                             open_positions = simulator.positions.get_open_positions_by_pair(simulation_name, pair_name)
+                            await send_close_position_embed(simulator, simulation['discord']['discord_channel_id'], open_position['id'])
 
     logger.info("Simulation completed.")

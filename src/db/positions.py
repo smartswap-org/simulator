@@ -187,3 +187,20 @@ class Positions:
         self.db_manager.db_cursor.execute(query, [simulation_name, pair_name])
         result = self.db_manager.db_cursor.fetchone()
         return result[0] if result else None
+    def get_position_by_id(self, position_id):
+        """
+        Retrieve a position by its ID.
+
+        position_id: The ID of the position to retrieve.
+
+        Returns:
+            The position as a dictionary if found, otherwise None.
+        """
+        query = "SELECT * FROM positions WHERE id = ?"
+        self.db_manager.db_cursor.execute(query, [position_id])
+        row = self.db_manager.db_cursor.fetchone()
+        
+        if row:
+            columns = [column[0] for column in self.db_manager.db_cursor.description]
+            return dict(zip(columns, row))
+        return None
