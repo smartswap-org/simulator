@@ -7,6 +7,7 @@ from loguru import logger
 from src.discord.integ_logs.open_position import send_open_position_embed
 from src.discord.integ_logs.close_position import send_close_position_embed
 from src.discord.integ_logs.fund_slot_summary import send_fund_slot_summary_embed
+from src.db.tables import initialize_funds
 from datetime import datetime, timedelta
 import asyncio
 
@@ -74,9 +75,18 @@ async def simulates(simulator):
         simulations_config = get_simulations_config()
         for simulation_name, simulation in simulations_config.items():
             logger.info(f"Starting simulation: {simulation_name}")
+            
+            # Calculate fund slots and initial capital
+            max_fund_slots = 100 // int(simulation['positions']['position_%_invest'])
+            initial_capital = float(simulation['wallet']['invest_capital'])
+            initial_capital_per_slot = initial_capital / max_fund_slots
+            
+            # Initialize funds
+            await initialize_funds(simulator.db_manager, simulation_name, max_fund_slots, initial_capital_per_slot)
+            
+            # Fetch OHLCV data
             data = await fetch_ohlcv_from_api(simulation)
             pairs_list = simulation['api']['pairs_list']
-            max_fund_slots = 100 // int(simulation['positions']['position_%_invest'])
 
             most_recent_date_str = simulator.positions.get_most_recent_date(simulation_name)
             most_recent_date = str_to_datetime(most_recent_date_str)
