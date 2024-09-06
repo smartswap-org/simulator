@@ -1,4 +1,4 @@
-import os 
+import os
 import importlib
 import aiohttp
 from src.discord.configs import get_simulations_config
@@ -9,23 +9,19 @@ from src.discord.integ_logs.close_position import send_close_position_embed
 
 def import_signals_and_indicators(strategies_folder="strategies"):
     strategies = {}
-
     for root, dirs, files in os.walk(strategies_folder):
         for file_name in files:
             if file_name.endswith(".py"):
                 file_path = os.path.join(root, file_name)
                 name_without_extension = os.path.splitext(file_name)[0]
                 strategy_name = os.path.relpath(file_path, strategies_folder).replace(os.sep, '_').rsplit('.', 1)[0]
-
                 try:
                     spec = importlib.util.spec_from_file_location(name_without_extension, file_path)
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-
                     buy_signal_func = getattr(module, 'buy_signal', None)
                     sell_signal_func = getattr(module, 'sell_signal', None)
                     indicators_class = getattr(module, 'Indicators', None)
-
                     if buy_signal_func and sell_signal_func and indicators_class:
                         strategies[strategy_name] = {
                             "buy_signal": buy_signal_func,
@@ -35,7 +31,6 @@ def import_signals_and_indicators(strategies_folder="strategies"):
                         logger.debug(f"Successfully imported 'buy_signal', 'sell_signal', and 'Indicators' from {file_path} as {strategy_name}")
                     else:
                         logger.warning(f"Module '{strategy_name}' does not contain 'buy_signal', 'sell_signal', and 'Indicators'")
-
                 except Exception as e:
                     logger.error(f"Failed to import module '{strategy_name}' from {file_path}: {e}")
     logger.info(f'Strategies: {strategies}')    
@@ -46,10 +41,8 @@ strategies = import_signals_and_indicators()
 async def simulates(simulator):
     async with aiohttp.ClientSession() as session:
         simulations_config = get_simulations_config()
-
         for simulation_name, simulation in simulations_config.items():
             logger.info(f"Starting simulation: {simulation_name}")
-
             data = await fetch_ohlcv_from_api(simulation)
             pairs_list = simulation['api']['pairs_list']
             max_fund_slots = 100 // int(simulation['positions']['position_%_invest'])
@@ -62,21 +55,25 @@ async def simulates(simulator):
                 prices = [float(entry[1].replace(',', '')) for entry in pair_data['data']]
                 indicators = strategies[simulation['api']['strategy']]['Indicators'](prices)
 
+                closed_positions_ids = set()  # To track closed positions
+                
                 if open_positions:
                     for pos in open_positions:
                         pos_start_index = pos['buy_index']
                         for i in range(max(pos_start_index, start_index), len(prices)):
                             sell_signal = strategies[simulation['api']['strategy']]['sell_signal'](pos, prices, i, indicators)
                             if sell_signal > 0:
-                                sell_date = pair_data['data'][i][0]
-                                sell_price = prices[i]
-                                sell_index = i
-                                sell_signal = sell_signal
-                                simulator.positions.close_position(
-                                    pos['id'], sell_date, sell_price, sell_index, sell_signal
-                                )
-                                logger.info(f"Closed position {pos['id']} for {pair_name} on {sell_date} at price {sell_price}")
-                                await send_close_position_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
+                                if pos['id'] not in closed_positions_ids:
+                                    sell_date = pair_data['data'][i][0]
+                                    sell_price = prices[i]
+                                    sell_index = i
+                                    logger.debug(f"Trying to close position {pos['id']} from {pos}")
+                                    simulator.positions.close_position(
+                                        pos['id'], sell_date, sell_price, sell_index, sell_signal
+                                    )
+                                    closed_positions_ids.add(pos['id'])
+                                    logger.info(f"Closed position {pos['id']} for {pair_name} on {sell_date} at price {sell_price}")
+                                    await send_close_position_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
                 
                 free_fund_slots = simulator.positions.get_free_fund_slots(simulation_name, pair_name, max_fund_slots)
                 if free_fund_slots:
@@ -85,12 +82,10 @@ async def simulates(simulator):
                         if buy_signal > 0:
                             if not free_fund_slots:
                                 break  # No more free fund slots available
-
                             fund_slot = free_fund_slots.pop(0)
                             buy_date = pair_data['data'][i][0]
                             buy_price = prices[i]
                             buy_index = i
-                            buy_signal = buy_signal
                             position_id = simulator.positions.create_position(
                                 simulation_name, pair_name, buy_date, buy_price, buy_index, fund_slot, buy_signal
                             )
