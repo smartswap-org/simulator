@@ -49,11 +49,24 @@ def extract_all_dates(data):
 def str_to_datetime(date_str):
     return datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
 
-def get_index_for_date(pair_data, target_date):
-    for i, entry in enumerate(pair_data['data']):
-        if datetime.strptime(entry[0], "%Y-%m-%d") == target_date:
-            return i
-    return None
+def preprocess_data(pair_data):
+    return {datetime.strptime(entry[0], "%Y-%m-%d"): i for i, entry in enumerate(pair_data['data'])}
+
+def get_index_for_date(preprocessed_data, target_date):
+    if isinstance(target_date, datetime):
+        target_date_key = target_date
+    elif isinstance(target_date, datetime.date):
+        target_date_key = datetime.combine(target_date, datetime.min.time())
+    else:
+        logger.error("Invalid target_date type: %s", type(target_date))
+        return None
+    
+    index = preprocessed_data.get(target_date_key, None)
+    
+    if index is None:
+        logger.error(f'No index found for date {target_date_key}')
+    
+    return index
 
 async def simulates(simulator):
     async with aiohttp.ClientSession() as session:
@@ -100,7 +113,8 @@ async def simulates(simulator):
                 logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d')}")
 
                 for pair_name, pair_data in zip(pairs_list, data):
-                    index = get_index_for_date(pair_data, target_date)
+                    preprocessed_data = preprocess_data(pair_data)
+                    index = get_index_for_date(preprocessed_data, target_date)
                     if index is None:
                         continue
 
