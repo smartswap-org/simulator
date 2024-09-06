@@ -49,4 +49,8 @@ To begin using the Smartswap Simulator, follow these steps:
 
 For any issues, suggestions, or contributions, please feel free to open an issue or pull request on [GitHub](https://github.com/smartswap-org/simulator).
 
+## Developement Draw
+
+<img src="https://github.com/smartswap-org/simulator/blob/9c5f79699d95944963a8980ddb8adacc2694ee54/assets/simulator.png">
+
 ---

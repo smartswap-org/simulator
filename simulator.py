@@ -1,16 +1,3 @@
-# =============================================================================
-# Smartswap Simulator
-# =============================================================================
-# A module of Smartswap that simulates trading strategies in real-time combined
-# with capital management strategies.
-#
-# Repository: https://github.com/smartswap-org/simulator
-# Author: Simon
-# =============================================================================
-# Description of this file:
-# This file is the main file of the simulator, you can run simulator.py using some arguments:
-# -debug : this parameter will log the debug logs in the folder 'logs/'
-
 import discord
 import socket
 import sqlite3
@@ -20,10 +7,11 @@ from discord.ext import tasks
 from discord import Activity, ActivityType
 from datetime import datetime
 from loguru import logger
-from src.db.manager import DatabaseManager
-from src.discord.integ_logs.log import log
 from src.discord.configs import get_discord_config
-from src.simulation.simulates import simulates 
+from src.db.manager import DatabaseManager 
+from src.simulation.simulates import simulates
+from src.discord.integ_logs.log import log 
+from src.db.positions import Positions
 
 # argument parser for handling debug mode
 parser = argparse.ArgumentParser(description='Run the simulator.')
@@ -42,24 +30,17 @@ log_file = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
 logger.add(log_file, rotation="00:00", retention="7 days", level="DEBUG" if args.debug else "INFO")
 
 class Simulator:
-    def __init__(self, discord_bot, bot_config):
+    def __init__(self, discord_bot, bot_config, db_path='simulator.db'):
         self.discord_bot = discord_bot  # Discord bot instance
-        self.bot_config = bot_config  # configuration for the bot, available in configs/discord_bot.json
-        self.db_manager = DatabaseManager()  # SQLite3 manager (creates tables, database, etc.)
+        self.bot_config = bot_config  # Configuration for the bot, available in configs/discord_bot.json
+        self.db_manager = DatabaseManager(db_path)  # Initialize DatabaseManager with the database path
+        self.positions = Positions(self.db_manager)
 
-    def update_position_sell_info(self, simulation_name, start_ts, end_ts, sell_date, sell_price):
+    def close(self):
         """
-        Update the sell information for a position in the database
+        Close the database connection when the simulator stops.
         """
-        try:
-            # update the simulation position in the database
-            self.db_manager.db_cursor.execute('''UPDATE simulation_positions SET sell_date = ?, sell_price = ? 
-                                      WHERE simulation_name = ? AND start_ts = ? AND end_ts = ?''', 
-                                   (sell_date, sell_price, simulation_name, start_ts, end_ts))
-            self.db_manager.db_connection.commit()  # Ccmmit the changes to the database
-            logger.debug(f"Position updated successfully: {simulation_name}, {start_ts} to {end_ts}")  # log success
-        except sqlite3.Error as e:
-            logger.error(f"An error occurred while updating position: {e}")  # log error if any
+        self.db_manager.close()  # Close the database connection
 
     @tasks.loop(seconds=1)
     async def simulates_loop(self):
@@ -85,6 +66,12 @@ class MyClient(discord.Client):
         await simulator.start_simulation()  # start the simulation
         await self.change_presence(activity=Activity(type=ActivityType.custom, name=" ", state="🚀 working"))  # set bot presence
 
-discord_bot = MyClient(intents=discord.Intents.all()) # create the Discord bot instance
-simulator = Simulator(discord_bot, get_discord_config())  # create the simulator instance
+discord_bot = MyClient(intents=discord.Intents.all())  # create the Discord bot instance
+simulator = Simulator(discord_bot, get_discord_config())  # create the simulator instance with a database connection
 discord_bot.run(simulator.bot_config["token"])  # run the bot with the token from the config
+
+# ensure the database connection is closed when the bot stops
+try:
+    discord_bot.run(simulator.bot_config["token"])
+finally:
+    simulator.db_manager.close()

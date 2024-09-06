@@ -1,166 +1,206 @@
-# =============================================================================
-# Smartswap Simulator
-# =============================================================================
-# Repository: https://github.com/smartswap-org/simulator
-# Author of this code: Simon
-# =============================================================================
-# Description of this file:
-# This file contains the functions used to interract with database to
-# fetch, update, save positions.
-# =============================================================================
+from datetime import datetime
 
-import discord 
-import sqlite3
-from loguru import logger
-from src.discord.integ_logs.position import send_position_embed
-
-
-async def fetch_positions_from_database(db_manager, simulation_name, previous_end_ts):
-    """
-    Fetch positions from the database for a specific simulation and end timestamp.
-    
-    simulator: Instance of Simulator class.
-    simulation_name: Name of the simulation.
-    previous_end_ts: Previous end timestamp for fetching positions.
-    
-    return: List of positions fetched from the database.
-    """
-    db_manager.db_cursor.execute(
-        '''SELECT p.*, p.buy_signals, p.sell_signals
-           FROM positions p
-           JOIN simulation_positions sp ON p.id = sp.position_id 
-           WHERE sp.simulation_name = ? 
-           AND sp.end_ts = ?''',
-        (simulation_name, previous_end_ts.strftime("%Y-%m-%d"))
-    )
-    return db_manager.db_cursor.fetchall()
-
-async def update_positions_in_database(simulator, simulation_name, simulation, previous_position, old_position):
-    """
-    Update positions in the database based on new data.
-    
-    simulator: Instance of Simulator class.
-    simulation_name: Name of the simulation.
-    simulation: Simulation configuration dictionary.
-    previous_position: Updated position data.
-    old_position: Old position data.
-    """
-    try:
-        simulator.db_manager.db_cursor.execute(
-            '''UPDATE positions 
-               SET sell_date = ?, sell_price = ?, 
-                   buy_signals = ?, sell_signals = ?, 
-                   buy_index = ?, sell_index = ?, 
-                   position_duration = ?, ratio = ?
-               WHERE id = ?''', 
-            (previous_position['sell_date'], previous_position['sell_price'], 
-             previous_position['buy_signals'], previous_position['sell_signals'], 
-             previous_position['buy_index'], previous_position['sell_index'], 
-             previous_position['position_duration'], previous_position['ratio'], 
-             old_position[0])
-        )
-        simulator.db_manager.db_connection.commit()
+class Positions:
+    def __init__(self, db_manager):
+        """
+        Initialize the Positions manager.
         
-        # fetch the updated position from the database
-        simulator.db_manager.db_cursor.execute(
-            '''SELECT pair, buy_date, buy_price, sell_date, sell_price, buy_signals, sell_signals, ratio, position_duration
-               FROM positions
-               WHERE id = ?''', 
-            (old_position[0],)
-        )
-        updated_position = simulator.db_manager.db_cursor.fetchone()
-        if updated_position:
-            position = {
-                'id': old_position[0],
-                'pair': updated_position[0],
-                'buy_date': updated_position[1],
-                'buy_price': updated_position[2],
-                'sell_date': updated_position[3],
-                'sell_price': updated_position[4],
-                'buy_signals': updated_position[5],
-                'sell_signals': updated_position[6],
-                'ratio': updated_position[7],
-                'position_duration': updated_position[8]
-            }
-            await send_position_embed(simulator, simulation['discord']['discord_channel_id'], "🎊 Closed Position", discord.Color.pink(), position)
-        
-        logger.debug(f"Position updated in database: {simulation_name}, {old_position}")
-    except sqlite3.Error as e:
-        logger.error(f"Error updating position in database: {e}")
- 
-async def get_positions_for_simulation(db_manager, simulation_name, start_ts, end_ts):
-    """
-    Retrieve positions for a given simulation from the database.
-    
-    simulation_name: Name of the simulation.
-    start_ts: Start timestamp of the simulation.
-    end_ts: End timestamp of the simulation.
-    
-    return: A list of positions or None if an error occurred.
-    """
-    try:
-        db_manager.db_cursor.execute('''SELECT DISTINCT p.pair, p.buy_date, p.buy_price, p.sell_date, p.sell_price,
-                                           p.buy_index, p.sell_index, p.position_duration, p.ratio,
-                                           p.buy_signals, p.sell_signals
-                                  FROM positions p
-                                  INNER JOIN simulation_positions sp ON p.id = sp.position_id
-                                  WHERE sp.simulation_name = ? AND sp.start_ts >= ? AND sp.end_ts <= ?''',
-                               (simulation_name, start_ts, end_ts))
-        positions = db_manager.db_cursor.fetchall()  # fetch all matching records
-        return positions  # return the list of positions
-    except sqlite3.Error as e:
-        logger.error(f"An error occurred while retrieving positions for simulation: {e}")
-        return None  # return None if an error occurred
+        db_manager: An instance of DatabaseManager.
+        """
+        self.db_manager = db_manager
 
-async def save_position(db_manager, pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals, fund_slot):
-    """
-    Save position data to the database.
-    
-    pair: Trading pair.
-    buy_date: Buy date of the position.
-    buy_price: Buy price of the position.
-    sell_date: Sell date of the position.
-    sell_price: Sell price of the position.
-    buy_index: Buy index of the position.
-    sell_index: Sell index of the position.
-    position_duration: Duration of the position.
-    ratio: Ratio of the position.
-    buy_signals: Buy signals for the position.
-    sell_signals: Sell signals for the position.
-    
-    return: The ID of the saved position or None if an error occurred.
-    """
-    try:
-        # check if the position already exists
-        db_manager.db_cursor.execute('''SELECT id FROM positions WHERE pair = ? AND buy_date = ? AND buy_price = ? AND sell_date = ? AND sell_price = ?''', 
-                               (pair, buy_date, buy_price, sell_date, sell_price))
-        position = db_manager.db_cursor.fetchone()  # fetch one matching record
-        if position:
-            position_id = position[0]  # get the position ID
-        else:
-            db_manager.db_cursor.execute('''INSERT INTO positions (pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals, fund_slot) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                                   (pair, buy_date, buy_price, sell_date, sell_price, buy_index, sell_index, position_duration, ratio, buy_signals, sell_signals, fund_slot))
-            db_manager.db_connection.commit()  # commit the changes
-            position_id = db_manager.db_cursor.lastrowid  # get the ID of the last inserted row
-        return position_id  # return the position ID
-    except sqlite3.Error as e:
-        logger.error(f"An error occurred while saving position: {e}")
-        return None  # return None if an error occurred
+    def get_positions_by_simulation(self, simulation_name, start_ts=None, end_ts=None):
+        """
+        Get all positions for a specific simulation_name within an optional timeframe.
 
-async def get_ratios_and_fund_slots_by_sell_date(db_manager, sell_date):
-    """
-    Retrieve the ratios and fund_slots of positions with the specified sell_date.
-    """
-    try:
+        simulation_name: The name of the simulation.
+        start_ts: Start timestamp (inclusive) in 'YYYY-MM-DD' format, optional.
+        end_ts: End timestamp (inclusive) in 'YYYY-MM-DD' format, optional.
+
+        Returns:
+            List of positions matching the criteria.
+        """
+        query = "SELECT * FROM positions WHERE simulation_name = ?"
+        params = [simulation_name]
+
+        if start_ts:
+            query += " AND buy_date >= ?"
+            params.append(start_ts)
+        if end_ts:
+            query += " AND buy_date <= ?"
+            params.append(end_ts)
+
+        self.db_manager.db_cursor.execute(query, params)
+        return self.db_manager.db_cursor.fetchall()
+
+    def get_open_positions(self, simulation_name):
+        """
+        Get all positions for a specific simulation_name that have no sell_index (i.e., still open).
+
+        simulation_name: The name of the simulation.
+
+        Returns:
+            List of open positions.
+        """
+        query = "SELECT * FROM positions WHERE simulation_name = ? AND sell_index IS NULL"
+        self.db_manager.db_cursor.execute(query, [simulation_name])
+        return self.db_manager.db_cursor.fetchall()
+
+    def create_position(self, simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal):
+        """
+        Create a new position for a specific simulation_name.
+
+        simulation_name: The name of the simulation.
+        pair: The trading pair (e.g., 'BTC/USD').
+        buy_date: The buy date in 'YYYY-MM-DD' format.
+        buy_price: The price at which the asset was bought.
+        buy_index: The index corresponding to the buy signal.
+        fund_slot: The portion of the fund allocated to this position.
+        buy_signal: Any signals associated with the buy decision.
+
+        Returns:
+            The ID of the newly created position.
+        """
+        buy_price = round(buy_price, 3)
+        fund_slot = round(fund_slot, 3)
+
+        query = '''INSERT INTO positions (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)'''
+        self.db_manager.db_cursor.execute(query, 
+            (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal))
+        self.db_manager.db_connection.commit()
+        return self.db_manager.db_cursor.lastrowid
+
+    def close_position(self, position_id, sell_date, sell_price, sell_index, sell_signal):
+        """
+        Close (sell) an open position by updating it with the sell information.
+
+        position_id: The ID of the position to close.
+        sell_date: The sell date in 'YYYY-MM-DD' format.
+        sell_price: The price at which the asset was sold.
+        sell_index: The index corresponding to the sell signal.
+        sell_signal: Any signals associated with the sell decision.
+
+        Returns:
+            None
+        """
+        # Fetch the position to calculate duration and ratio
+        self.db_manager.db_cursor.execute("SELECT buy_date, buy_price FROM positions WHERE id = ?", [position_id])
+        position = self.db_manager.db_cursor.fetchone()
+
+        if not position:
+            raise ValueError(f"No position found with ID {position_id}")
+
+        buy_date_str, buy_price = position
+        buy_date = datetime.strptime(buy_date_str, '%Y-%m-%d')
+        sell_date_obj = datetime.strptime(sell_date, '%Y-%m-%d')
+
+        # Calculate position duration (in days)
+        position_duration = (sell_date_obj - buy_date).days
+
+        # Calculate the profit/loss ratio
+        ratio = round(sell_price / buy_price, 3)  # Round ratio to 3 decimal places
+
+        sell_price = round(sell_price, 3)
+
+        # Update the position with the sell information
+        query = '''UPDATE positions
+                   SET sell_date = ?, sell_price = ?, sell_index = ?, sell_signal = ?, 
+                       position_duration = ?, ratio = ?
+                   WHERE id = ?'''
+        self.db_manager.db_cursor.execute(query, 
+            (sell_date, sell_price, sell_index, sell_signal, position_duration, ratio, position_id))
+        self.db_manager.db_connection.commit()
+
+    def get_most_recent_date(self, simulation_name):
+        """
+        Get the most recent date (either sell_date or buy_date) for a given simulation_name.
+
+        simulation_name: The name of the simulation.
+
+        Returns:
+            The most recent date as a string in 'YYYY-MM-DD' format.
+        """
         query = '''
-        SELECT ratio, fund_slot
+        SELECT MAX(
+            CASE 
+                WHEN sell_date IS NOT NULL THEN sell_date
+                ELSE buy_date
+            END
+        ) as most_recent_date
         FROM positions
-        WHERE sell_date = ?
+        WHERE simulation_name = ?
         '''
-        db_manager.db_cursor.execute(query, (sell_date,))
-        results = db_manager.db_cursor.fetchall()
-        return results
-    except sqlite3.Error as e:
-        logger.error(f"An error occurred while retrieving ratios and fund_slots: {e}")
-        return []
+        self.db_manager.db_cursor.execute(query, [simulation_name])
+        result = self.db_manager.db_cursor.fetchone()
+        return result[0] if result else None
+    def get_open_positions_by_pair(self, simulation_name, pair_name):
+        """
+        Get all open positions for a specific simulation_name and trading pair.
+
+        simulation_name: The name of the simulation.
+        pair_name: The trading pair (e.g., 'BTC/USD').
+
+        Returns:
+            List of open positions for the specified pair as dictionaries.
+        """
+        query = '''
+        SELECT * FROM positions 
+        WHERE simulation_name = ? 
+        AND pair = ? 
+        AND sell_index IS NULL
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, pair_name])
+        columns = [column[0] for column in self.db_manager.db_cursor.description]
+        rows = self.db_manager.db_cursor.fetchall()
+        return [dict(zip(columns, row)) for row in rows]
+
+    def get_max_index_for_pair(self, simulation_name, pair_name):
+        """
+        Get the maximum index (either buy_index or sell_index) for a specific pair 
+        in a given simulation, considering all current and past positions.
+
+        simulation_name: The name of the simulation.
+        pair_name: The trading pair (e.g., 'BTC/USD').
+
+        Returns:
+            The maximum index value among all buy_index and sell_index for the specified pair.
+            If no positions exist, returns None.
+        """
+        query = '''
+        SELECT MAX(
+            CASE 
+                WHEN buy_index IS NOT NULL AND sell_index IS NOT NULL THEN 
+                    CASE 
+                        WHEN buy_index > sell_index THEN buy_index
+                        ELSE sell_index 
+                    END
+                WHEN buy_index IS NOT NULL THEN buy_index
+                WHEN sell_index IS NOT NULL THEN sell_index
+                ELSE 0
+            END
+        ) as max_index
+        FROM positions 
+        WHERE simulation_name = ? 
+        AND pair = ?
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, pair_name])
+        result = self.db_manager.db_cursor.fetchone()
+        return result[0] if result else None
+    def get_position_by_id(self, position_id):
+        """
+        Retrieve a position by its ID.
+
+        position_id: The ID of the position to retrieve.
+
+        Returns:
+            The position as a dictionary if found, otherwise None.
+        """
+        query = "SELECT * FROM positions WHERE id = ?"
+        self.db_manager.db_cursor.execute(query, [position_id])
+        row = self.db_manager.db_cursor.fetchone()
+        
+        if row:
+            columns = [column[0] for column in self.db_manager.db_cursor.description]
+            return dict(zip(columns, row))
+        return None

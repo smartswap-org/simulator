@@ -13,7 +13,7 @@
 import aiohttp
 from loguru import logger
 
-async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
+async def fetch_ohlcv_from_api(simulation):
     """
     Fetch positions from an API endpoint for a specific simulation and time range.
     
@@ -25,30 +25,20 @@ async def fetch_positions_from_api(simulation, start_ts_config, end_ts):
     """
     try:
         pairs = list(simulation['api']['pairs_list'])
-        all_current_positions = []
-        all_old_positions = []
+        pairs_data = []
 
         async with aiohttp.ClientSession() as session:
             for pair in pairs:
-                url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?start_ts={start_ts_config.strftime('%Y-%m-%d')}&end_ts={end_ts.strftime('%Y-%m-%d')}&multi_positions={simulation['api']['multi_positions']}"
+                url = f"http://127.0.0.1:5000/QTSBE/{pair}/{simulation['api']['strategy']}?details=True"
 
                 async with session.get(url) as response:
                     if response.status == 200:
                         response_json = await response.json()
-                        old_positions = response_json["result"][1]
-                        current_positions = response_json["result"][2]
-                        
-                        for position in old_positions:
-                            position['pair'] = pair
-                        for position in current_positions:
-                            position['pair'] = pair
-                        
-                        all_old_positions.extend(old_positions)
-                        all_current_positions.extend(current_positions)
+                        pairs_data.extend([response_json])
                     else:
                         logger.error(f"Failed to fetch data from {url}, status code: {response.status}")
 
-        return all_current_positions, all_old_positions
+        return pairs_data
 
     except Exception as e:
         logger.error(f"Error fetching positions from API: {e}")

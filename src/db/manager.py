@@ -24,7 +24,6 @@ class DatabaseManager:
         self.db_connection = sqlite3.connect(db_path)  # connect to the SQLite database
         self.db_cursor = self.db_connection.cursor()  # create a cursor object to interact with the database
         asyncio.run(create_tables(self))  # create tables if they don't exist
-
     def close(self):
         """
         Close the database connection.
