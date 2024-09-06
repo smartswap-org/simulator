@@ -30,12 +30,10 @@ def import_signals_and_indicators(strategies_folder="strategies"):
                             "sell_signal": sell_signal_func,
                             "Indicators": indicators_class
                         }
-                        logger.debug(f"Successfully imported 'buy_signal', 'sell_signal', and 'Indicators' from {file_path} as {strategy_name}")
-                    else:
-                        logger.warning(f"Module '{strategy_name}' does not contain 'buy_signal', 'sell_signal', and 'Indicators'")
+                        logger.debug(f"Imported strategy '{strategy_name}' from {file_path}")
                 except Exception as e:
                     logger.error(f"Failed to import module '{strategy_name}' from {file_path}: {e}")
-    logger.info(f'Strategies: {strategies}')    
+    logger.info(f'Strategies: {strategies}')
     return strategies
 
 strategies = import_signals_and_indicators()
@@ -45,20 +43,15 @@ def extract_all_dates(data):
     for pair_data in data:
         for entry in pair_data['data']:
             date_str = entry[0]
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            all_dates.add(date)
-    return sorted(list(all_dates))
+            all_dates.add(datetime.strptime(date_str, "%Y-%m-%d"))
+    return sorted(all_dates)
 
 def str_to_datetime(date_str):
-    if date_str:
-        return datetime.strptime(date_str, "%Y-%m-%d")
-    return None
+    return datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
 
 def get_index_for_date(pair_data, target_date):
     for i, entry in enumerate(pair_data['data']):
-        date_str = entry[0]
-        date = datetime.strptime(date_str, "%Y-%m-%d")
-        if date == target_date:
+        if datetime.strptime(entry[0], "%Y-%m-%d") == target_date:
             return i
     return None
 
@@ -72,7 +65,7 @@ async def simulates(simulator):
             max_fund_slots = 100 // int(simulation['positions']['position_%_invest'])
 
             most_recent_date_str = simulator.positions.get_most_recent_date(simulation_name)
-            most_recent_date = str_to_datetime(most_recent_date_str)  # Convertir en datetime
+            most_recent_date = str_to_datetime(most_recent_date_str)
 
             start_ts = simulation['api'].get('start_ts')
             end_ts = simulation['api'].get('end_ts')
@@ -82,9 +75,7 @@ async def simulates(simulator):
 
             if start_date and (most_recent_date is None or most_recent_date < start_date):
                 most_recent_date = start_date
-                logger.info(f"Adjusting start date to {start_date.strftime('%Y-%m-%d')}")
-
-            logger.info(f"Most recent date for {simulation_name} is {most_recent_date_str}")
+                logger.info(f"Adjusted start date to {start_date.strftime('%Y-%m-%d')}")
 
             all_dates = extract_all_dates(data)
             filtered_dates = [date for date in all_dates if most_recent_date is None or date > most_recent_date - timedelta(days=1)]
@@ -99,7 +90,6 @@ async def simulates(simulator):
                 elapsed_time = current_time - start_time
 
                 if elapsed_time >= 10:
-                    logger.debug('HEARTBEAT AVOID / Short pause due to elapsed_time')
                     await asyncio.sleep(1)
                     start_time = asyncio.get_event_loop().time()
 
@@ -139,10 +129,7 @@ async def simulates(simulator):
                     if free_fund_slots:
                         buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, index, indicators)
                         if buy_signal > 0:
-                            if not free_fund_slots:
-                                break
-                            fund_slot = free_fund_slots[0]  
-                            free_fund_slots.pop(0)  
+                            fund_slot = free_fund_slots.pop(0)  
                             buy_date = pair_data['data'][index][0]
                             buy_price = prices[index]
                             position_id = simulator.positions.create_position(
