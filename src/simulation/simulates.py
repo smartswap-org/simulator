@@ -6,8 +6,8 @@ from src.api.fetch import fetch_ohlcv_from_api
 from loguru import logger
 from src.discord.integ_logs.open_position import send_open_position_embed
 from src.discord.integ_logs.close_position import send_close_position_embed
-from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
+import asyncio
 
 def import_signals_and_indicators(strategies_folder="strategies"):
     strategies = {}
@@ -49,6 +49,11 @@ def extract_all_dates(data):
             all_dates.add(date)
     return sorted(list(all_dates))
 
+def str_to_datetime(date_str):
+    if date_str:
+        return datetime.strptime(date_str, "%Y-%m-%d")
+    return None
+
 def get_index_for_date(pair_data, target_date):
     for i, entry in enumerate(pair_data['data']):
         date_str = entry[0]
@@ -67,22 +72,29 @@ async def simulates(simulator):
             max_fund_slots = 100 // int(simulation['positions']['position_%_invest'])
 
             most_recent_date_str = simulator.positions.get_most_recent_date(simulation_name)
-            logger.info(f"Most recent date for {simulation_name} is {most_recent_date}")
-            # Précharger toutes les dates disponibles
+            most_recent_date = str_to_datetime(most_recent_date_str)  # Convertir en datetime
+            logger.info(f"Most recent date for {simulation_name} is {most_recent_date_str}")
+
             all_dates = extract_all_dates(data)
+            filtered_dates = [date for date in all_dates if most_recent_date is None or date > most_recent_date - timedelta(days=1)]
 
-            # Filtrer les dates pour commencer à partir de la date la plus récente
-            filtered_dates = [date for date in all_dates if most_recent_date is None or date > most_recent_date]
-
-            closed_positions_ids = set()  # To track closed positions
+            closed_positions_ids = set()
+            start_time = asyncio.get_event_loop().time() 
 
             for target_date in filtered_dates:
+                current_time = asyncio.get_event_loop().time()
+                elapsed_time = current_time - start_time
+
+                if elapsed_time >= 7:  
+                    await asyncio.sleep(1)  
+                    start_time = asyncio.get_event_loop().time()  
+
                 logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d')}")
                 
                 for pair_name, pair_data in zip(pairs_list, data):
                     index = get_index_for_date(pair_data, target_date)
                     if index is None:
-                        continue  # Skip if the date is not found in this pair's data
+                        continue
 
                     prices = [float(entry[1].replace(',', '')) for entry in pair_data['data']]
                     indicators = strategies[simulation['api']['strategy']]['Indicators'](prices)
@@ -110,7 +122,7 @@ async def simulates(simulator):
                         buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, index, indicators)
                         if buy_signal > 0:
                             if not free_fund_slots:
-                                break  # No more free fund slots available
+                                break
                             fund_slot = free_fund_slots.pop(0)
                             buy_date = pair_data['data'][index][0]
                             buy_price = prices[index]
@@ -119,5 +131,6 @@ async def simulates(simulator):
                             )
                             logger.info(f"Opened position {position_id} for {pair_name} on {buy_date} at price {buy_price} with fund slot {fund_slot}")
                             await send_open_position_embed(simulator, simulation['discord']['discord_channel_id'], position_id)
+                
 
     logger.info("Simulation completed.")
