@@ -60,16 +60,12 @@ async def simulates(simulator):
                 open_positions = simulator.positions.get_open_positions_by_pair(simulation_name, pair_name)
                 start_index = simulator.positions.get_max_index_for_pair(simulation_name, pair_name) or 0
                 prices = [float(entry[1].replace(',', '')) for entry in pair_data['data']]
-                rsi = get_RSI(prices, 14)
                 indicators = strategies[simulation['api']['strategy']]['Indicators'](prices)
 
                 if open_positions:
                     for pos in open_positions:
                         pos_start_index = pos['buy_index']
                         for i in range(max(pos_start_index, start_index), len(prices)):
-                            if rsi[i] is None:
-                                continue
-                            
                             sell_signal = strategies[simulation['api']['strategy']]['sell_signal'](pos, prices, i, indicators)
                             if sell_signal > 0:
                                 sell_date = pair_data['data'][i][0]
