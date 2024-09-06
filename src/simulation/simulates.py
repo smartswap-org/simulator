@@ -66,11 +66,17 @@ async def simulates(simulator):
             pairs_list = simulation['api']['pairs_list']
             max_fund_slots = 100 // int(simulation['positions']['position_%_invest'])
 
+            most_recent_date_str = simulator.positions.get_most_recent_date(simulation_name)
+            logger.info(f"Most recent date for {simulation_name} is {most_recent_date}")
+            # Précharger toutes les dates disponibles
             all_dates = extract_all_dates(data)
+
+            # Filtrer les dates pour commencer à partir de la date la plus récente
+            filtered_dates = [date for date in all_dates if most_recent_date is None or date > most_recent_date]
 
             closed_positions_ids = set()  # To track closed positions
 
-            for target_date in all_dates:
+            for target_date in filtered_dates:
                 logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d')}")
                 
                 for pair_name, pair_data in zip(pairs_list, data):
@@ -92,7 +98,6 @@ async def simulates(simulator):
                                 sell_date = pair_data['data'][index][0]
                                 sell_price = prices[index]
                                 sell_index = index
-                                logger.debug(f"Trying to close position {pos['id']} from {pos}")
                                 simulator.positions.close_position(
                                     pos['id'], sell_date, sell_price, sell_index, sell_signal
                                 )
