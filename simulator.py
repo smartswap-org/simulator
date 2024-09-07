@@ -1,6 +1,6 @@
 import discord
 import socket
-import sqlite3
+#import sqlite3
 import argparse
 import os
 from discord.ext import tasks

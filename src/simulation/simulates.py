@@ -7,6 +7,7 @@ from loguru import logger
 from src.discord.integ_logs.open_position import send_open_position_embed
 from src.discord.integ_logs.close_position import send_close_position_embed
 from src.discord.integ_logs.fund_slot_summary import send_fund_slot_summary_embed
+from src.discord.integ_logs.central_message import send_or_update_central_summary_embed
 from src.db.tables import initialize_funds
 from datetime import datetime, timedelta
 import asyncio
@@ -54,7 +55,7 @@ def str_to_datetime(date_str):
 def preprocess_data(pair_data):
     return {datetime.strptime(entry[0], "%Y-%m-%d"): i for i, entry in enumerate(pair_data['data'])}
 
-def get_index_for_date(preprocessed_data, target_date):
+def get_index_for_date(preprocessed_data, target_date, pair_name):
     if isinstance(target_date, datetime):
         target_date_key = target_date
     elif isinstance(target_date, datetime.date):
@@ -66,7 +67,7 @@ def get_index_for_date(preprocessed_data, target_date):
     index = preprocessed_data.get(target_date_key, None)
     
     if index is None:
-        logger.error(f'No index found for date {target_date_key}')
+        logger.error(f'No index found for date {target_date_key} ({pair_name})')
     
     return index
 
@@ -83,7 +84,7 @@ async def simulates(simulator):
             
             # Initialize funds
             await initialize_funds(simulator.db_manager, simulation_name, max_fund_slots, initial_capital_per_slot)
-            
+
             # Fetch OHLCV data
             data = await fetch_ohlcv_from_api(simulation)
             pairs_list = simulation['api']['pairs_list']
@@ -110,6 +111,8 @@ async def simulates(simulator):
             start_time = asyncio.get_event_loop().time()
 
             for target_date in filtered_dates:
+                await send_or_update_central_summary_embed(simulator, simulation['discord'].get('discord_channel_id'), simulation_name)
+
                 current_time = asyncio.get_event_loop().time()
                 elapsed_time = current_time - start_time
 
@@ -125,7 +128,7 @@ async def simulates(simulator):
 
                 for pair_name, pair_data in zip(pairs_list, data):
                     preprocessed_data = preprocess_data(pair_data)
-                    index = get_index_for_date(preprocessed_data, target_date)
+                    index = get_index_for_date(preprocessed_data, target_date, pair_name)
                     if index is None:
                         continue
 
