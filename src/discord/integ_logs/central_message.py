@@ -6,17 +6,21 @@ from src.internal.mng import ensure_internal_ini, read_simulation_data, write_si
 async def send_or_update_central_summary_embed(simulator, channel_id, simulation_name):
     ensure_internal_ini()
     
+    central_message_id = read_simulation_data(simulation_name)
     
     positions = simulator.positions.get_positions_by_simulation(simulation_name)
+    
     if not positions:
         logger.info(f"No positions found for simulation {simulation_name}")
         return
 
     fund_slot_data = {}
     for position in positions:
+        fund_slot = position[11]  
         #position_id = position[0]  
         buy_date = position[3] if position[3] is not None else "N/A"
         sell_date = position[5] if position[5] is not None else "N/A"
+        ratio = position[10] if position[10] is not None else 1.0  
 
         if fund_slot not in fund_slot_data:
             fund_slot_data[fund_slot] = {
@@ -29,12 +33,14 @@ async def send_or_update_central_summary_embed(simulator, channel_id, simulation
         if sell_date > fund_slot_data[fund_slot]["last_sell_date"]:
             fund_slot_data[fund_slot]["last_sell_date"] = sell_date
         if buy_date > fund_slot_data[fund_slot]["last_buy_date"]:
+            fund_slot_data[fund_slot]["last_buy_date"] = buy_date
         fund_slot_data[fund_slot]["last_ratio"] = ratio
         
         ratios = simulator.positions.get_ratios_for_fund_slot(simulation_name, fund_slot)
         if ratios:
             total = 1.0 
             for ratio in ratios:
+                total = total * ratio
             fund_slot_data[fund_slot]["total_profit"] = total 
     
     embed = discord.Embed(
@@ -50,8 +56,11 @@ async def send_or_update_central_summary_embed(simulator, channel_id, simulation
         last_buy_date_str = data["last_buy_date"]
         last_sell_date_str = data["last_sell_date"]
         
+        embed.add_field(
             name=f"**💰 Fund Slot {fund_slot}**",
+            value=f"📅 Last Buy Date: {last_buy_date_str}\n"
                   f"📅 Last Sell Date: {last_sell_date_str}\n"
+                  f"📈 Last Ratio: {last_ratio_str}\n"
                   f"**🚀 Total Profit:** {total_profit:.3f}\n",
             inline=False  
         )
