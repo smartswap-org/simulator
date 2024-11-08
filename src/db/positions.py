@@ -96,6 +96,7 @@ class Positions:
         self.db_manager.db_cursor.execute(query, [simulation_name])
         used_slots = self.db_manager.db_cursor.fetchall()
         return {slot[0] for slot in used_slots}
+
     def close_position(self, position_id, sell_date, sell_price, sell_index, sell_signal):
         """
         Close (sell) an open position by updating it with the sell information.
@@ -110,15 +111,15 @@ class Positions:
             None
         """
         # Fetch the position to calculate duration and ratio
-        self.db_manager.db_cursor.execute("SELECT buy_date, buy_price FROM positions WHERE id = ?", [position_id])
+        self.db_manager.db_cursor.execute("SELECT buy_date, buy_price, simulation_name, fund_slot FROM positions WHERE id = ?", [position_id])
         position = self.db_manager.db_cursor.fetchone()
 
         if not position:
             raise ValueError(f"No position found with ID {position_id}")
 
-        buy_date_str, buy_price = position
-        buy_date = datetime.strptime(buy_date_str, '%Y-%m-%d')
-        sell_date_obj = datetime.strptime(sell_date, '%Y-%m-%d')
+        buy_date_str, buy_price, simulation_name, fund_slot = position
+        buy_date = datetime.strptime(buy_date_str, '%Y-%m-%d %H:%M:%S')
+        sell_date_obj = datetime.strptime(sell_date, '%Y-%m-%d %H:%M:%S')
 
         # Calculate position duration (in days)
         position_duration = (sell_date_obj - buy_date).days
@@ -135,6 +136,43 @@ class Positions:
                 WHERE id = ?'''
         self.db_manager.db_cursor.execute(query, 
         (sell_date, sell_price, sell_index, sell_signal, position_duration, ratio, position_id))
+        self.db_manager.db_connection.commit()
+
+        self.update_fund_after_close(simulation_name, fund_slot, position_id, ratio)
+
+    def update_fund_after_close(self, simulation_name, fund_slot, last_position_id, ratio):
+        """
+        Update the funds table after closing a position.
+
+        simulation_name: The name of the simulation.
+        fund_slot: The fund slot of the closed position.
+        last_position_id: The ID of the last closed position.
+        ratio: The profit/loss ratio of the closed position.
+
+        Returns:
+            None
+        """
+        query = '''
+        SELECT capital FROM funds 
+        WHERE simulation_name = ? AND fund_slot = ? 
+        ORDER BY id DESC LIMIT 1
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, fund_slot])
+        result = self.db_manager.db_cursor.fetchone()
+
+        if result is None:
+            raise ValueError(f"No fund entry found for simulation '{simulation_name}' and fund slot '{fund_slot}'")
+
+        current_capital = result[0]
+
+        new_capital = round(current_capital * ratio, 3)
+
+        insert_query = '''
+        INSERT INTO funds (simulation_name, fund_slot, last_position_id, capital)
+        VALUES (?, ?, ?, ?)
+        '''
+        self.db_manager.db_cursor.execute(insert_query, 
+            (simulation_name, fund_slot, last_position_id, new_capital))
         self.db_manager.db_connection.commit()
 
     def get_most_recent_date(self, simulation_name):
@@ -229,3 +267,28 @@ class Positions:
             columns = [column[0] for column in self.db_manager.db_cursor.description]
             return dict(zip(columns, row))
         return None
+    def get_ratios_for_fund_slot(self, simulation_name, fund_slot):
+        """
+        Get the ratio for each position containing the given fund_slot 
+        in a specific simulation_name.
+
+        simulation_name: The name of the simulation.
+        fund_slot: The fund slot for which to retrieve ratios.
+
+        Returns:
+            List of ratios for the positions containing the specified fund_slot.
+        """
+        query = '''
+        SELECT ratio 
+        FROM positions 
+        WHERE simulation_name = ? 
+        AND fund_slot = ? 
+        AND sell_index IS NOT NULL
+        '''
+        self.db_manager.db_cursor.execute(query, [simulation_name, fund_slot])
+        rows = self.db_manager.db_cursor.fetchall()
+        
+        ratios = [row[0] for row in rows]
+        
+        return ratios
+    
