@@ -46,14 +46,14 @@ def extract_all_dates(data):
     for pair_data in data:
         for entry in pair_data['data']:
             date_str = entry[0]
-            all_dates.add(datetime.strptime(date_str, "%Y-%m-%d"))
+            all_dates.add(datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S"))
     return sorted(all_dates)
 
 def str_to_datetime(date_str):
-    return datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
+    return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S") if date_str else None
 
 def preprocess_data(pair_data):
-    return {datetime.strptime(entry[0], "%Y-%m-%d"): i for i, entry in enumerate(pair_data['data'])}
+    return {datetime.strptime(entry[0], "%Y-%m-%d %H:%M:%S"): i for i, entry in enumerate(pair_data['data'])}
 
 def get_index_for_date(preprocessed_data, target_date, pair_name):
     if isinstance(target_date, datetime):
@@ -100,7 +100,7 @@ async def simulates(simulator):
 
             if start_date and (most_recent_date is None or most_recent_date < start_date):
                 most_recent_date = start_date
-                logger.info(f"Adjusted start date to {start_date.strftime('%Y-%m-%d')}")
+                logger.info(f"Adjusted start date to {start_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
             all_dates = extract_all_dates(data)
             filtered_dates = [date for date in all_dates if most_recent_date is None or date > most_recent_date - timedelta(days=1)]
@@ -121,10 +121,10 @@ async def simulates(simulator):
                     start_time = asyncio.get_event_loop().time()
 
                 if end_date and target_date > end_date:
-                    logger.info(f"Stopping simulation as target date {target_date.strftime('%Y-%m-%d')} exceeds end date {end_date.strftime('%Y-%m-%d')}")
+                    logger.info(f"Stopping simulation as target date {target_date.strftime('%Y-%m-%d %H:%M:%S')} exceeds end date {end_date.strftime('%Y-%m-%d %H:%M:%S')}")
                     break
 
-                logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d')}")
+                logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
                 for pair_name, pair_data in zip(pairs_list, data):
                     preprocessed_data = preprocess_data(pair_data)

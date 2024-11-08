@@ -118,8 +118,8 @@ class Positions:
             raise ValueError(f"No position found with ID {position_id}")
 
         buy_date_str, buy_price, simulation_name, fund_slot = position
-        buy_date = datetime.strptime(buy_date_str, '%Y-%m-%d')
-        sell_date_obj = datetime.strptime(sell_date, '%Y-%m-%d')
+        buy_date = datetime.strptime(buy_date_str, '%Y-%m-%d %H:%M:%S')
+        sell_date_obj = datetime.strptime(sell_date, '%Y-%m-%d %H:%M:%S')
 
         # Calculate position duration (in days)
         position_duration = (sell_date_obj - buy_date).days

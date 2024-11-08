@@ -23,7 +23,7 @@ log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)  # create the logs directory if it doesn't exist
 
 # log file name based on current date
-log_file = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
+log_file = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log")
 
 # configure loguru to handle logging
 logger.add(log_file, rotation="00:00", retention="7 days", level="DEBUG" if args.debug else "INFO")
