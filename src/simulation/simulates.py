@@ -132,8 +132,7 @@ async def simulates(simulator):
                     if index is None:
                         continue
 
-                    prices = [float(entry[1].replace(',', '')) for entry in pair_data['data']]
-                    indicators = strategies[simulation['api']['strategy']]['Indicators'](prices)
+                    indicators = strategies[simulation['api']['strategy']]['Indicators'](pair_data['data']).indicators
 
                     open_positions = simulator.positions.get_open_positions_by_pair(simulation_name, pair_name)
                     
@@ -141,10 +140,10 @@ async def simulates(simulator):
                         for pos in open_positions:
                             if pos['id'] in closed_positions_ids:
                                 continue
-                            sell_signal = strategies[simulation['api']['strategy']]['sell_signal'](pos, prices, index, indicators)
+                            sell_signal = strategies[simulation['api']['strategy']]['sell_signal'](pos, pair_data['data'], index, indicators)
                             if sell_signal > 0:
                                 sell_date = pair_data['data'][index][0]
-                                sell_price = prices[index]
+                                sell_price = pair_data['data'][index][3]
                                 sell_index = index
                                 simulator.positions.close_position(
                                     pos['id'], sell_date, sell_price, sell_index, sell_signal
@@ -155,11 +154,11 @@ async def simulates(simulator):
                                 await send_fund_slot_summary_embed(simulator, simulation['discord']['discord_channel_id'], pos['id'])
                     free_fund_slots = simulator.positions.get_free_fund_slots(simulation_name, max_fund_slots)
                     if free_fund_slots:
-                        buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, prices, index, indicators)
+                        buy_signal = strategies[simulation['api']['strategy']]['buy_signal'](None, pair_data['data'], index, indicators)
                         if buy_signal > 0:
                             fund_slot = free_fund_slots.pop(0)  
                             buy_date = pair_data['data'][index][0]
-                            buy_price = prices[index]
+                            buy_price = pair_data['data'][index][3]
                             position_id = simulator.positions.create_position(
                                 simulation_name, pair_name, buy_date, buy_price, index, fund_slot, buy_signal
                             )
