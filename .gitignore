@@ -5,3 +5,4 @@ simulator.db
 logs/
 strategies/*
 .DS_Store
+ini/internal.ini
