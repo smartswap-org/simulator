@@ -127,6 +127,7 @@ async def simulates(simulator):
                 logger.info(f"Processing date: {target_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
                 for pair_name, pair_data in zip(pairs_list, data):
+                    await asyncio.sleep(0)  # Yield control to the event loop
                     preprocessed_data = preprocess_data(pair_data)
                     index = get_index_for_date(preprocessed_data, target_date, pair_name)
                     if index is None:
