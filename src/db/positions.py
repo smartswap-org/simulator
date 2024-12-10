@@ -61,7 +61,7 @@ class Positions:
         Returns:
             The ID of the newly created position.
         """
-        buy_price = round(buy_price, 3)
+        buy_price = buy_price
         fund_slot = round(fund_slot, 3)
 
         query = '''INSERT INTO positions (simulation_name, pair, buy_date, buy_price, buy_index, fund_slot, buy_signal)
@@ -126,8 +126,6 @@ class Positions:
 
         # Calculate the profit/loss ratio
         ratio = round(sell_price / buy_price, 3)  # Round ratio to 3 decimal places
-
-        sell_price = round(sell_price, 3)
 
         # Update the position with the sell information
         query = '''UPDATE positions

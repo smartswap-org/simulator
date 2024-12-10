@@ -39,7 +39,12 @@ async def send_fund_slot_summary_embed(simulator, channel_id, position_id):
     embed.add_field(name="💵 Currency Pair", value=position['pair'], inline=True)
     embed.add_field(name="📅 Sell Date", value=position['sell_date'], inline=True)
     embed.add_field(name="💲 Sell Price", value=f"${position['sell_price']:.2f}", inline=True)
-    embed.add_field(name="📈 Ratios", value=", ".join([f"{r:.3f}" for r in ratios]), inline=False)
+    
+    ratios_str = ", ".join([f"{r:.3f}" for r in ratios])
+    if len(ratios_str) > 1000:
+        ratios_str = ratios_str[:1021] + "..."
+    
+    embed.add_field(name="📈 Ratios", value=ratios_str, inline=False)
     embed.add_field(name="💰 Total Profit", value=f"{total_profit:.3f}", inline=True)
 
     embed.set_footer(text="SmartSwap Simulator", icon_url="https://github.com/smartswap-org/simulator/blob/main/assets/simulator-logo.jpeg?raw=true")
